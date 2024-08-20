@@ -66,13 +66,13 @@ Google Developers 개발 가이드 <br>
 https://developer.android.com/develop/ui/compose/documentation?hl=ko <br>
 <br><br>
 <h1>블로그</h1>
-[Compose for Desktop 마일스톤 1](https://blog.naver.com/PostView.nhn?blogId=tangunsoft&logNo=222270698048&parentCategoryNo=&categoryNo=27&viewDate=&isShowPopularPosts=false&from=postView)<br>
+[Compose for Desktop 마일스톤 1](https://blog.naver.com/PostView.nhn?blogId=tangunsoft&logNo=222270698048&parentCategoryNo=&categoryNo=27&viewDate=&isShowPopularPosts=false&from=postView)<br><br>
 [Jetpack Compose for Desktop: 마일스톤 2 릴리스](https://blog.naver.com/PostView.naver?blogId=tangunsoft&logNo=222275867247&parentCategoryNo=&categoryNo=27&viewDate=&isShowPopularPosts=false&from=postView)<br>
 <br><br>
 
 <h1>샘플소스</h1>
 샘플1 (이것이 최신 버전 샘플임)<br>
-**[compose-multiplatform-desktop-template](https://github.com/JetBrains/compose-multiplatform-desktop-template)**
+[compose-multiplatform-desktop-template](https://github.com/JetBrains/compose-multiplatform-desktop-template)
 <br>
 샘플 2<br>
 [compose-multiplatform-desktop-template](https://github.com/JetBrains/compose-multiplatform-desktop-template)
@@ -80,6 +80,8 @@ https://developer.android.com/develop/ui/compose/documentation?hl=ko <br>
 샘플 3<br>
 [compose-multiplatform](https://github.com/JetBrains/compose-multiplatform)
 <br><br>
+
+
 | Sample                                                                                                       | Description                                              | Platforms             |
 | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- | --------------------- |
 | [Imageviewer](https://github.com/JetBrains/compose-multiplatform/blob/master/examples/imageviewer)           | Image Viewer application                                 | Android, iOS, Desktop |
@@ -92,7 +94,6 @@ https://developer.android.com/develop/ui/compose/documentation?hl=ko <br>
 | [Notepad](https://github.com/JetBrains/compose-multiplatform/blob/master/examples/notepad)                   | Notepad, using the Composable Window API                 | Desktop               |
 | [IDEA plugin](https://github.com/JetBrains/compose-multiplatform/blob/master/examples/intellij-plugin)       | Plugin for IDEA using Compose for Desktop                | Desktop               |
 | [HTML based samples](https://github.com/JetBrains/compose-multiplatform/blob/master/examples/html/README.md) | Examples written with Compose HTML Library               |                       |
-
 
 
 
