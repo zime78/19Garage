@@ -20,6 +20,8 @@
 
 ### 빌드 방법
    [[02_Compose for Desktop 앱 배포 방법]]
+   <img width="645" alt="image" src="https://github.com/user-attachments/assets/8601e31b-cff2-424a-ba56-15b4a7538aea">
+
 
 ### [Kotlin Multiplatform Wizard](https://kmp.jetbrains.com/#newProject)
 프로젝트 생성으로 해도 되므로 다른 용도로 사용하면 좋을듯함.
