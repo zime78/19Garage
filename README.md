@@ -1,5 +1,5 @@
 
-# 개요<br>
+<h1>개요</h1>
 <p>
 해당 프로젝트는 일구 형님의 자동차정비 차량 관리를 위한 프로그램 입니다.<br>
 해당 프로그램은 오직 "고객 차량 관리"목적으로만 개발이 됩니다.<br>
@@ -15,8 +15,8 @@
 ---
 <br>
 
-# 참고 자료 <br>
-### 빌드 방법<br>
+<h1>참고 자료</h1>
+<h3>빌드 방법</h3>
 
 어플리케이션을 JVM 패키지로 빌드하려면:
 ```kotlin
@@ -38,14 +38,14 @@
 <img width="50%" alt="image" src="https://github.com/user-attachments/assets/8601e31b-cff2-424a-ba56-15b4a7538aea">
 </p>
 <br>
-### UI Framework 참고 <br>
+<h3>UI Framework 참고</h3>
 [Compose Desktop Components (KMP)](https://velog.io/@dkqk0124/Compose-Desktop-Components) <br>
 [Kotlin Multiplatform Development](https://kotlinlang.org/docs/multiplatform-get-started.html) <br>
 <br><br>
-##### iOS + Android + Desktop<br>
+<h3> iOS + Android + Desktop</h3>
 - [Getting started](https://jb.gg/start-cmp)
 <br><br>
-##### Desktop<br>
+<h3>Desktop</h3>
 - [Image and icon manipulations](https://github.com/JetBrains/compose-multiplatform/blob/master/tutorials/Image_And_Icons_Manipulations)<br>
 - [Mouse events and hover](https://github.com/JetBrains/compose-multiplatform/blob/master/tutorials/Mouse_Events)<br>
 - [Scrolling and scrollbars](https://github.com/JetBrains/compose-multiplatform/blob/master/tutorials/Desktop_Components#scrollbars)<br>
@@ -61,16 +61,16 @@
 - [Building a native distribution](https://github.com/JetBrains/compose-multiplatform/blob/master/tutorials/Native_distributions_and_local_execution)<br>
 - [UI testing](https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-test.html)<br>
 <br><br>
-##### Jetpack Compose 시작하기 <br>
+<h3>Jetpack Compose 시작하기</h3>
 Google Developers 개발 가이드 <br>
 https://developer.android.com/develop/ui/compose/documentation?hl=ko <br>
 <br><br>
-##### 블로그<br>
+<h1>블로그</h1>
 [Compose for Desktop 마일스톤 1](https://blog.naver.com/PostView.nhn?blogId=tangunsoft&logNo=222270698048&parentCategoryNo=&categoryNo=27&viewDate=&isShowPopularPosts=false&from=postView)<br>
 [Jetpack Compose for Desktop: 마일스톤 2 릴리스](https://blog.naver.com/PostView.naver?blogId=tangunsoft&logNo=222275867247&parentCategoryNo=&categoryNo=27&viewDate=&isShowPopularPosts=false&from=postView)<br>
 <br><br>
 
-### 샘플소스<br>
+<h1>샘플소스</h1>
 샘플1 (이것이 최신 버전 샘플임)<br>
 **[compose-multiplatform-desktop-template](https://github.com/JetBrains/compose-multiplatform-desktop-template)**
 <br>
