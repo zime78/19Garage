@@ -14,6 +14,7 @@ GitHub : https://github.com/zime78/19Garage  <br>
 <br>
 
 # DB 설계 <br>
+<img width="374" alt="image" src="https://github.com/user-attachments/assets/a3a099fd-88d9-4a43-81db-626f32c4988b">
 
 ---
 <br>
