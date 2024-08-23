@@ -5,8 +5,11 @@
 해당 프로그램은 오직 "고객 차량 관리"목적으로만 개발이 됩니다.<br>
 <br>
 해당 프로그램은  InteliJ IDEA  "Compose for Desktop"  을 이용하여 개발을 진행합니다.<br>
-언어 : Kotlin Compose<br>
-프로젝트이름 19Garage<br>
+프로젝트 이름 : 19Garage <br>
+개발툴 : IntelliJ IDEA <br>
+사용 언어  : Kotlin Compose <br>
+지원OS : Windows, Mac OS <br>
+GitHub : https://github.com/zime78/19Garage  <br>
 </p>
 <br>
 
