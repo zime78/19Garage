@@ -6,6 +6,7 @@ import common.DbManager.DBType
 import common.DbManager.DEBUG_LOG
 import common.DbManager.connection
 import common.DbManager.disconnect
+import kotlinx.coroutines.runBlocking
 import java.sql.Connection
 import java.sql.SQLException
 
@@ -30,20 +31,19 @@ class vehicleModelModel: DBBaseModel() {
                             logloadAll(connection)
                             println("테이블 존재함.")
                         }
-                        disconnect(connection)
                         return
                     }
                 }
 
                 //테이블 생성
-                val vehicleModelTableSQL = """
+                val createVehicleModelTableSQL = """
                     CREATE TABLE VehicleModel (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         model VARCHAR(255) NOT NULL
                     );
-                """.trimIndent()
+                    """.trimIndent()
                 connection.createStatement().use { statement ->
-                    statement.execute(vehicleModelTableSQL)
+                    statement.execute(createVehicleModelTableSQL)
                 }
 
                 //테이블 추가
@@ -62,14 +62,17 @@ class vehicleModelModel: DBBaseModel() {
             } catch (e: SQLException) {
                 e.printStackTrace()
                 println("DB Error : ${e.message}")
+            } finally {
+                //DB처리후 생성 해제.
+                runBlocking {
+                    disconnect(connection)
+                }
             }
-            //DB처리후 생성 해제.
-            disconnect(connection)
         }
     }
 
     /**
-     * 차�� 모델 데이터 목록 조회
+     * 데이터 목록 조회
      * @param connection DB Connection
      */
     fun logloadAll( connection: Connection) {

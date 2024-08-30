@@ -1,12 +1,12 @@
 package DB.viewModel
 
 import DB.type.VehicleFormatType
-import DB.type.VehicleModelType
 import base.DBBaseModel
 import common.DbManager.DBType
 import common.DbManager.DEBUG_LOG
 import common.DbManager.connection
 import common.DbManager.disconnect
+import kotlinx.coroutines.runBlocking
 import java.sql.Connection
 import java.sql.SQLException
 
@@ -31,20 +31,19 @@ class vehicleFormatModel: DBBaseModel() {
                             logloadAll(connection)
                             println("테이블 존재함.")
                         }
-
-                        disconnect(connection)
+                        return
                     }
                 }
 
                 //테이블 생성
-                val createTableSQL = """
-                CREATE TABLE VehicleFormat (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    type VARCHAR(255) NOT NULL
-                );
-                """.trimIndent()
+                val createVehicleModelTableSQL = """
+                    CREATE TABLE VehicleFormat (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        type VARCHAR(255) NOT NULL
+                    );
+                    """.trimIndent()
                 connection.createStatement().use { statement ->
-                    statement.execute(createTableSQL)
+                    statement.execute(createVehicleModelTableSQL)
                 }
 
                 //테이블 추가
@@ -63,15 +62,18 @@ class vehicleFormatModel: DBBaseModel() {
 
             } catch (e: SQLException) {
                 e.printStackTrace()
+            } finally {
+                //DB처리후 생성 해제.
+                runBlocking {
+                    disconnect(connection)
+                }
             }
 
-            //DB처리후 생성 해제.
-            disconnect(connection)
         }
     }
 
     /**
-     * 국가형식 데이터 조회
+     * 데이터 조회
      * @param connection
      */
     fun logloadAll( connection: Connection) {

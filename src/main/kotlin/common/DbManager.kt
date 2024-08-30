@@ -2,6 +2,7 @@ package common
 
 import DB.type.VehicleModelType
 import DB.viewModel.*
+import kotlinx.coroutines.runBlocking
 import utils.Util
 import java.sql.Connection
 import java.sql.DriverManager
@@ -55,12 +56,14 @@ object DbManager {
     fun load() {
         //초기 DB설정
         //init -> load 순서
-        dbVehicleModelModel.setDefaultVehicleModelDB()
-        dbVehicleFormatModel.setDefaultVehicleFormatDB()
-        dbEngineModel.setDefaultEngineDB()
-        dbImprovementModel.setDefaultImprovementDB()
-        dbClassificationModel.setDefaultClassificationDB()
-        dbItemsModel.setDefaultItemsDB()
+        runBlocking {
+            dbVehicleModelModel.setDefaultVehicleModelDB()
+            dbVehicleFormatModel.setDefaultVehicleFormatDB()
+            dbEngineModel.setDefaultEngineDB()
+            dbImprovementModel.setDefaultImprovementDB()
+            dbClassificationModel.setDefaultClassificationDB()
+            dbItemsModel.setDefaultItemsDB()
+        }
     }
 
     // section DB 연결/해제
@@ -76,7 +79,7 @@ object DbManager {
                 DBType.ITEMS -> DriverManager.getConnection(dbItems)
             }
             if (DEBUG_LOG)
-                println("DB connection : $dbType, $dbConnection")
+                println("DB connection : $dbType, ${dbConnection.metaData.url}")
             return dbConnection
         } catch (e: SQLException) {
             e.printStackTrace()
@@ -89,9 +92,25 @@ object DbManager {
     fun disconnect(connection: Connection?) {
         connection?.let {
             if (DEBUG_LOG)
-                println("DB disconnect : $it")
+                println("DB disconnect : ${it.metaData.url}")
             it.close()
         }
     }
 
+    /**
+     * 모든 데이터 다시 로드
+     */
+    fun reloadAllData() {
+        println("Reloading all data...")
+
+        dbClassificationModel.reloadClassificationData().also {
+            println("classificationModel reloaded: $it")
+        }
+
+        dbItemsModel.reloadItemData().also {
+            println("itemsModel reloaded: $it")
+        }
+
+        //FIXME:: 필요에 따라 다른 모델들도 추가
+    }
 }
