@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import common.DbManager
 
 @Composable
 @Preview
@@ -25,6 +26,10 @@ fun App() {
 }
 
 fun main() = application {
+
+    //DB 초기화
+    DbManager.load()
+
     Window(onCloseRequest = ::exitApplication) {
         App()
     }
