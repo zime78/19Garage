@@ -3,6 +3,7 @@ package DB.viewModel
 import DB.type.VehicleModelType
 import base.DBBaseModel
 import common.DbManager.DBType
+import common.DbManager.DEBUG_LOG
 import common.DbManager.connection
 import common.DbManager.disconnect
 import java.sql.Connection
@@ -25,8 +26,10 @@ class vehicleModelModel: DBBaseModel() {
                 connection.createStatement().use { statement ->
                     val resultSet = statement.executeQuery(checkTableSQL)
                     if (resultSet.next()) {
-                        loadAll(connection)
-                        println("테이블 존재함.")
+                        if (DEBUG_LOG){
+                            logloadAll(connection)
+                            println("테이블 존재함.")
+                        }
                         disconnect(connection)
                         return
                     }
@@ -54,7 +57,8 @@ class vehicleModelModel: DBBaseModel() {
                 }
 
                 //테이블 조회
-                loadAll(connection)
+                if (DEBUG_LOG)
+                    logloadAll(connection)
             } catch (e: SQLException) {
                 e.printStackTrace()
                 println("DB Error : ${e.message}")
@@ -68,14 +72,15 @@ class vehicleModelModel: DBBaseModel() {
      * 차�� 모델 데이터 목록 조회
      * @param connection DB Connection
      */
-    fun loadAll( connection: Connection) {
+    fun logloadAll( connection: Connection) {
         val selectSQL = "SELECT * FROM VehicleModel"
         connection.createStatement().use { statement ->
             val resultSet = statement.executeQuery(selectSQL)
             while (resultSet.next()) {
                 val id = resultSet.getInt("id")
                 val model = resultSet.getString("model")
-                println("id: $id, model: $model")
+                if (DEBUG_LOG)
+                    println("id: $id, model: $model")
             }
         }
     }
