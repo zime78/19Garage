@@ -1,12 +1,17 @@
 package common
 
-import DB.type.VehicleModelType
 import DB.viewModel.*
 import kotlinx.coroutines.runBlocking
 import utils.Util
+import utils.Util.Companion.getDatabasePath
+import utils.Util.Companion.requestFileAccess
+import java.awt.Desktop
+import java.io.File
+import java.lang.System.*
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.SQLException
+import java.util.*
 
 /**
  * DB 관리를 하기위해서 추가함.
@@ -25,12 +30,12 @@ object DbManager {
     }
 
     //기본으로 사용될 DB처리
-    private val dbVehicleModel = "jdbc:sqlite:./db/vehicleModel.db"
-    private val dbVehicleFormat = "jdbc:sqlite:./db/vehicleFormat.db"
-    private val dbEngineFormat = "jdbc:sqlite:./db/engine.db"
-    private val dbImprovement = "jdbc:sqlite:./db/improvement.db"
-    private val dbClassification = "jdbc:sqlite:./db/classification.db"
-    private val dbItems = "jdbc:sqlite:./db/items.db"
+    private val dbVehicleModel = getDatabasePath("db/vehicleModel.db")
+    private val dbVehicleFormat = getDatabasePath("db/vehicleFormat.db")
+    private val dbEngineFormat = getDatabasePath("db/engine.db")
+    private val dbImprovement = getDatabasePath("db/improvement.db")
+    private val dbClassification = getDatabasePath("db/classification.db")
+    private val dbItems = getDatabasePath("db/items.db")
 
     private var dbVehicleModelModel: vehicleModelModel
     private var dbVehicleFormatModel: vehicleFormatModel
@@ -40,9 +45,18 @@ object DbManager {
     private var dbItemsModel: itemsModel
 
     init {
+        // macOS에서 파일 접근 요청
+//        if (getProperty("os.name").toLowerCase().contains("mac")) {
+//            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+//                requestFileAccess()
+//            } else {
+//                println("Desktop actions are not supported on this platform.")
+//            }
+//        }
+
         //폴더가 있는지 체크함. (없으면 생성)
-        Util.isDirectoryExists("db/sample.db")
-        Util.isDirectoryExists("db/user/sample.db")
+        Util.isDirectoryExists(getDatabasePath("db/sample.db", true))
+        Util.isDirectoryExists(getDatabasePath("db/user/sample.db", true))
 
         //model 초기화
         dbVehicleModelModel = vehicleModelModel()
@@ -81,6 +95,22 @@ object DbManager {
             if (DEBUG_LOG)
                 println("DB connection : $dbType, ${dbConnection.metaData.url}")
             return dbConnection
+        } catch (e: SQLException) {
+            e.printStackTrace()
+            println("DB Connection Error : ${e.message}")
+            null
+        }
+    }
+
+    //사용자 DB Connection 가져오기 (EX: user_{userid}.db)
+    fun connection(dbName: String): Connection? {
+        return try {
+            val dbUserName = "jdbc:sqlite:./db/user_${dbName.lowercase(Locale.getDefault())}.db"
+            val dbConnection = DriverManager.getConnection(dbUserName)
+            if (DEBUG_LOG){
+                println("DB connection :  $dbName, $dbUserName, ${dbConnection.metaData.url}")
+            }
+            dbConnection
         } catch (e: SQLException) {
             e.printStackTrace()
             println("DB Connection Error : ${e.message}")

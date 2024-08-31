@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.compose.internal.de.undercouch.gradle.tasks.download.org.slf4j.MDC.put
 
 plugins {
     kotlin("jvm")
@@ -37,6 +38,15 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "19Garage"
             packageVersion = "1.0.0"
+
+            macOS {
+                bundleID = "com.zime.garage"
+                infoPlist {
+                    // put() 메소드를 사용하여 필요한 키 값을 추가합니다.
+                    put("NSAppleEventsUsageDescription", "이 애플리케이션은 다른 애플리케이션과 상호작용하기 위해 Apple Events를 사용합니다.")
+                    put("NSFileAccessUsageDescription", "이 애플리케이션은 파일에 접근하기 위해 승인되어야 합니다.")
+                }
+            }
         }
     }
 }
