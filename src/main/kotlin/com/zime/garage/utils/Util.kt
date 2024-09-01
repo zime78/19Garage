@@ -1,10 +1,9 @@
-package utils
+package com.zime.garage.utils
 
 import java.io.File
 import java.nio.file.Paths
 import java.util.*
 import javax.swing.JFileChooser
-import javax.swing.JFileChooser.*
 
 class Util {
     companion object {
@@ -25,7 +24,14 @@ class Util {
         fun getDatabasePath(dbName: String, isFilePath: Boolean = false): String {
             val osName = System.getProperty("os.name").lowercase(Locale.getDefault())
             val basePath = when {
-                osName.contains("mac") -> Paths.get(System.getProperty("user.home"), "Documents", "19Garage").toString()
+                osName.contains("mac") -> {
+                    val path = Paths.get(System.getProperty("user.home"), "Documents", "garage").toFile()
+                    if (!path.exists()) {
+                        path.mkdirs()
+                    }
+                    Paths.get(System.getProperty("user.home"), "Documents", "garage").toString()
+                }
+                //C:\Users\zime\AppData\Roaming\19Garage\db\sample.db
                 osName.contains("win") -> Paths.get(System.getenv("APPDATA"), "19Garage").toString()
                 else -> Paths.get(System.getProperty("user.dir"), "db").toString()
             }

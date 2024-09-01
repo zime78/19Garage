@@ -1,3 +1,5 @@
+package com.zime.garage
+
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
@@ -9,12 +11,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import common.DbManager
+import com.zime.garage.common.DbManager
 
 @Composable
 @Preview
 fun App() {
     var text by remember { mutableStateOf("Hello, World!") }
+
+    //DB 초기화
+    DbManager.load()
 
     MaterialTheme {
         Button(onClick = {
@@ -26,10 +31,6 @@ fun App() {
 }
 
 fun main() = application {
-
-    //DB 초기화
-    DbManager.load()
-
     Window(onCloseRequest = ::exitApplication) {
         App()
     }

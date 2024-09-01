@@ -1,6 +1,6 @@
-package DB.viewModel
+package com.zime.garage.db.viewModel
 
-import base.DBBaseModel
+import com.zime.garage.base.DBBaseModel
 
 /**
  * 사용자 정보는 사용자의 정보를 저장하는 DB

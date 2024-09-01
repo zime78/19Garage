@@ -1,4 +1,4 @@
-package DB.type
+package com.zime.garage.db.type
 
 data class UserRecordType(
     val id: Int,

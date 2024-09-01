@@ -1,11 +1,11 @@
-package DB.viewModel
+package com.zime.garage.db.viewModel
 
-import DB.type.VehicleModelType
-import base.DBBaseModel
-import common.DbManager.DBType
-import common.DbManager.DEBUG_LOG
-import common.DbManager.connection
-import common.DbManager.disconnect
+import com.zime.garage.db.type.VehicleModelType
+import com.zime.garage.base.DBBaseModel
+import com.zime.garage.common.DbManager.DBType
+import com.zime.garage.common.DbManager.DEBUG_LOG
+import com.zime.garage.common.DbManager.connection
+import com.zime.garage.common.DbManager.disconnect
 import kotlinx.coroutines.runBlocking
 import java.sql.Connection
 import java.sql.SQLException

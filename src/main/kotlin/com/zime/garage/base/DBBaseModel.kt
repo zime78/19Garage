@@ -1,4 +1,4 @@
-package base
+package com.zime.garage.base
 
 import java.sql.Connection
 

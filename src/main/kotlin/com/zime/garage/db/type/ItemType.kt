@@ -1,4 +1,4 @@
-package DB.type
+package com.zime.garage.db.type
 
 data class ItemType(
     val id: Int,

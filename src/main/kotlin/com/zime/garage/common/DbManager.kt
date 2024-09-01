@@ -1,13 +1,9 @@
-package common
+package com.zime.garage.common
 
-import DB.viewModel.*
+import com.zime.garage.db.viewModel.*
+import com.zime.garage.utils.Util
+import com.zime.garage.utils.Util.Companion.getDatabasePath
 import kotlinx.coroutines.runBlocking
-import utils.Util
-import utils.Util.Companion.getDatabasePath
-import utils.Util.Companion.requestFileAccess
-import java.awt.Desktop
-import java.io.File
-import java.lang.System.*
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.SQLException

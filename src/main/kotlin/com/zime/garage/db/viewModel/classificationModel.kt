@@ -1,11 +1,11 @@
-package DB.viewModel
+package com.zime.garage.db.viewModel
 
-import DB.type.ClassificationType
-import base.DBBaseModel
-import common.DbManager
-import common.DbManager.DBType
-import common.DbManager.connection
-import common.DbManager.disconnect
+import com.zime.garage.db.type.ClassificationType
+import com.zime.garage.base.DBBaseModel
+import com.zime.garage.common.DbManager
+import com.zime.garage.common.DbManager.DBType
+import com.zime.garage.common.DbManager.connection
+import com.zime.garage.common.DbManager.disconnect
 import kotlinx.coroutines.runBlocking
 import java.sql.Connection
 import java.sql.SQLException
@@ -76,7 +76,7 @@ class classificationModel(): DBBaseModel() {
      * 아이템 다시 로드
      */
     fun reloadClassificationData(): List<ClassificationType> {
-        DbManager.connection(DbManager.DBType.CLASSIFICATION)?.use { connection ->
+        connection(DBType.CLASSIFICATION)?.use { connection ->
             return try {
                 getClassificationData(connection)
             } catch (e: SQLException) {
