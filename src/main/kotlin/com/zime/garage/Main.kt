@@ -11,19 +11,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import com.zime.garage.common.DbManager
+import com.zime.garage.common.LocalFileManager
+import com.zime.garage.common.PreferencesManager
 
 @Composable
 @Preview
 fun App() {
     var text by remember { mutableStateOf("Hello, World!") }
 
-    //DB 초기화
-    DbManager.load()
+    //초기화
+    LocalFileManager.load()
 
     MaterialTheme {
         Button(onClick = {
             text = "Hello, Desktop!"
+//            LocalFileManager.TestJsonWrite()
         }) {
             Text(text)
         }

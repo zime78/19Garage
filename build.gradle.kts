@@ -23,9 +23,13 @@ dependencies {
 //    implementation("org.jetbrains.exposed:exposed-dao:0.41.1")
 //    implementation("org.jetbrains.exposed:exposed-jdbc:0.41.1")
 //    implementation("org.xerial:sqlite-jdbc:3.41.2.2")
-    implementation("org.xerial:sqlite-jdbc:3.41.2.2")
+//    implementation("org.xerial:sqlite-jdbc:3.41.2.2")
     //JDBC 관련 의존성을 추가합니다. 예를 들어, H2 데이터베이스를 사용하는 경우
 //    implementation("com.h2database:h2:2.2.220")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+    implementation("org.jetbrains.compose.ui:ui:1.0.0-alpha4")
+
 }
 compose.desktop {
     application {

@@ -1,8 +1,6 @@
 package com.zime.garage.base
 
-import java.sql.Connection
-
-open class DBBaseModel() {
+open class BaseModel() {
 
 //    private var connection: Connection? = null
 //

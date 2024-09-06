@@ -1,6 +1,6 @@
 package com.zime.garage.db.viewModel
 
-import com.zime.garage.base.DBBaseModel
+import com.zime.garage.base.BaseModel
 
 /**
  * 사용자 정보는 사용자의 정보를 저장하는 DB
@@ -11,7 +11,7 @@ import com.zime.garage.base.DBBaseModel
  * dbName : 사용자ID
  */
 
-class userModel(private val dbName: String): DBBaseModel() {
+class userModel(private val dbName: String): BaseModel() {
 
     fun setUpDatabase() {
 

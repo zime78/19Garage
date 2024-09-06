@@ -21,15 +21,15 @@ class Util {
             }
         }
 
-        fun getDatabasePath(dbName: String, isFilePath: Boolean = false): String {
+        fun getDatabasePath(dbName: String, isFilePath: Boolean = true): String {
             val osName = System.getProperty("os.name").lowercase(Locale.getDefault())
             val basePath = when {
                 osName.contains("mac") -> {
-                    val path = Paths.get(System.getProperty("user.home"), "Documents", "garage").toFile()
+                    val path = Paths.get(System.getProperty("user.home"), "Documents", "19Garage").toFile()
                     if (!path.exists()) {
                         path.mkdirs()
                     }
-                    Paths.get(System.getProperty("user.home"), "Documents", "garage").toString()
+                    Paths.get(System.getProperty("user.home"), "Documents", "19Garage").toString()
                 }
                 //C:\Users\zime\AppData\Roaming\19Garage\db\sample.db
                 osName.contains("win") -> Paths.get(System.getenv("APPDATA"), "19Garage").toString()
@@ -38,8 +38,8 @@ class Util {
 
             val path = Paths.get(basePath, dbName).toString()
             println("path] Database Path : $path")
-            if(isFilePath) return path
-            else return "jdbc:sqlite:${Paths.get(basePath, dbName).toString()}"
+            return if(isFilePath) path
+            else path
         }
         fun requestFileAccess() {
             val fileChooser = JFileChooser()
