@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.zime"
-version = "1.0-SNAPSHOT"
+version = "1.0.0"
 
 repositories {
     mavenCentral()
@@ -38,7 +38,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "garage"
-            packageVersion = "1.0.0"
+            packageVersion = project.version.toString()
 
             macOS {
                 bundleID = "com.zime.garage"
@@ -64,6 +64,10 @@ compose.desktop {
 //            "-Djava.util.logging.config.file=logging.properties"
 //        )
     }
+}
+
+tasks.withType<JavaExec> {
+    environment("APP_VERSION", project.version)  // 환경 변수로 버전 전달
 }
 
 //tasks.withType<JavaExec>().configureEach {
