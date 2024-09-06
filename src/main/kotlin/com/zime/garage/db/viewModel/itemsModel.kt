@@ -6,6 +6,7 @@ import com.zime.garage.common.LocalFileManager
 import com.zime.garage.common.LocalFileManager.FileType
 import com.zime.garage.common.LocalFileManager.closeFile
 import com.zime.garage.common.LocalFileManager.openFile
+import com.zime.garage.db.type.ItemType
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.*
 
@@ -54,4 +55,35 @@ class itemsModel: BaseModel() {
         }
     }
 
+    fun loadItemsFile(): List<ItemType> {
+        val file = openFile(FileType.ITEMS) // 적절한 파일 열기 함수 호출
+        return file?.let {
+            try {
+                if (!file.exists()) {
+                    println("파일이 존재하지 않습니다.")
+                    return emptyList()
+                }
+
+                // JSON 파일 읽기
+                val jsonString = file.readText()
+                val json = Json.parseToJsonElement(jsonString).jsonObject
+                val typesJsonArray = json["item"]?.jsonArray
+
+                // JSON 배열을 리스트로 변환 및 중복 제거
+                typesJsonArray?.map { jsonElement ->
+                    jsonElement.jsonPrimitive.content
+                }?.distinct()?.mapIndexed { index, item ->
+                    ItemType(id = index, item = item)
+                } ?: emptyList()
+
+            } catch (e: Exception) {
+                println("loadItemsFile Json load error: $e")
+                emptyList()
+            } finally {
+                runBlocking {
+                    closeFile(file)
+                }
+            }
+        } ?: emptyList()
+    }
 }

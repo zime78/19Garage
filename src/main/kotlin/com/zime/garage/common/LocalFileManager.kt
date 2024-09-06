@@ -107,6 +107,19 @@ object LocalFileManager {
         }
     }
 
+    fun TestLoadAll() {
+//        val items = dbClassificationModel.loadClassificationFile()
+//        val items = dbEngineModel.loadEngineFile()
+//        val items = dbImprovementModel.loadImprovementFile()
+//        val items = dbItemsModel.loadItemsFile()
+//        val items = dbVehicleFormatModel.loadVehicleFormatFile()
+        val items = dbVehicleModelModel.loadVehicleModelFile()
+
+        items.forEach {
+            println(it)
+        }
+    }
+
     //section == Test Code ==
     fun loadTest(onDataCallback: (text:String) -> Unit = {}){
         println("LocalFileManager load")

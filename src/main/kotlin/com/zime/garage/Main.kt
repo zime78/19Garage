@@ -25,7 +25,7 @@ fun App() {
     MaterialTheme {
         Button(onClick = {
             text = "Hello, Desktop!"
-//            LocalFileManager.TestJsonWrite()
+            LocalFileManager.TestLoadAll()
         }) {
             Text(text)
         }
