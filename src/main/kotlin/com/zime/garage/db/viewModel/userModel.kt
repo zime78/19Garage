@@ -1,19 +1,17 @@
 package com.zime.garage.db.viewModel
 
 import com.zime.garage.base.BaseModel
+import com.zime.garage.db.type.UserRecordType
 
 /**
- * 사용자 정보는 사용자의 정보를 저장하는 DB
+ * 리스트 선택한 사용자 정보를 조회 / 수정 / 삭제 함.
  *
- * DB이름은 사용자 ID포함함.
+ * 사용자 이름은 사용자 ID포함함.
  *  EX) user_{사용자ID}.db
  *
- * dbName : 사용자ID
+ * userID : 사용자ID
  */
 
-class userModel(private val dbName: String): BaseModel() {
+class userModel(private val userID: String): BaseModel() {
 
-    fun setUpDatabase() {
-
-    }
 }
