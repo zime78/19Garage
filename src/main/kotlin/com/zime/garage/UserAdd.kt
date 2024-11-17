@@ -1,22 +1,26 @@
 package com.zime.garage
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.InputTransformation.Companion.keyboardOptions
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.rememberWindowState
+import com.zime.garage.common.SimpleDatePicker
+import com.zime.garage.db.type.UserAddType
 import com.zime.garage.db.type.UserRecordType
 import com.zime.garage.db.viewModel.classificationModel
+import java.text.SimpleDateFormat
 import java.util.*
 
 /**
@@ -27,16 +31,34 @@ import java.util.*
 fun ViewUserAdd(onCloseCallback: () -> Unit) {
     val windowState = rememberWindowState()
 
+    //등록날짜, 차량번호
+    val date = remember { mutableStateOf("") }
+    val vehicleNumber = remember { mutableStateOf("") }
+
+    //고객이름, 연락처
     val name = remember { mutableStateOf("") }
     val contact = remember { mutableStateOf("") }
-    val vehicleNumber = remember { mutableStateOf("") }
-    val mileage = remember { mutableStateOf("") }
 
+    //그외
+    val remarks = remember { mutableStateOf("") }
 
     //model
     val classificationModel = classificationModel()
-    val classificationItems = classificationModel.loadClassificationFile()
-    val selectedCategory = remember { mutableStateOf("") }
+//    val classificationItems = classificationModel.loadClassificationFile()
+//    val selectedCategory = remember { mutableStateOf("") }
+
+    var showDatePickerDialog by remember { mutableStateOf(false) }
+    val selectedDate = remember { mutableStateOf(Date()) }
+    if (showDatePickerDialog) {
+        SimpleDatePicker(
+            selectedDate = selectedDate,
+            onDismissRequest = {
+                val formattedDate = SimpleDateFormat("yyyy-MM-dd", Locale.KOREA).format(selectedDate.value)
+                date.value = formattedDate
+                showDatePickerDialog = false
+            }
+        )
+    }
 
     Window(
         onCloseRequest = {
@@ -45,126 +67,107 @@ fun ViewUserAdd(onCloseCallback: () -> Unit) {
         title = "회원 추가",
         state = windowState
     ) {
+        val scrollState = rememberScrollState()
+
         Column(
             modifier = Modifier
 //                .background(color = Color.DarkGray).alpha(0.95f)
                 .fillMaxSize()
                 .padding(16.dp)
+                .verticalScroll(scrollState)
         ) {
-
-            //section 이름 / 연락처
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)
+            // 날짜 / 차량번호
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween // 두 TextField 간격 조절
-                ) {
-                    TextField(
-                        value = name.value,
-                        onValueChange = {
-                            if (it.length <= 20) name.value = it
-                        },
-                        label = { Text("이름") },
-                        modifier = Modifier
-                            .weight(1f) // 전체 Row 공간의 50% 차지
-                            .padding(end = 5.dp) // 오른쪽 간격 5.dp 추가로 세팅해 간격 설정
-                    )
-
-                    TextField(
-                        value = contact.value,
-                        onValueChange = {
-                            if (it.length <= 15 && it.all { char -> char.isDigit() || char == '-' }) {
-                                contact.value = it
+                TextField(
+                    value = date.value,
+                    onValueChange = {
+                        date.value = it
+                    }, // Read-only
+                    label = { Text("날짜") },
+                    readOnly = false,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 5.dp)
+                        .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = {
+                                showDatePickerDialog = true
                             }
-                        },
-                        label = { Text("연락처") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                        modifier = Modifier
-                            .weight(1f) // 전체 Row 공간의 50% 차지
-                            .padding(start = 5.dp) // 왼쪽 간격 5.dp 추가로 세팅해 간격 설정
-                    )
-                }
+                        )
+                    }
+//                    modifier = Modifier
+//                        .weight(1f)
+//                        .padding(end = 5.dp)
+//                        .clickable(onClick = {
+//                            showDatePickerDialog = true
+//                        })
+                )
+
+                TextField(
+                    value = vehicleNumber.value,
+                    onValueChange = {
+                        if (it.length <= 10) vehicleNumber.value = it
+                    },
+                    label = { Text("차량 번호") },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 5.dp)
+                        .clickable(onClick = {
+                            showDatePickerDialog = true
+                        })
+                )
             }
 
-            //section 차량번호 / 주행거리
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)
+            // 이름 / 연락처
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween // 두 TextField 간격 조절
-                ) {
-                    TextField(
-                        value = vehicleNumber.value,
-                        onValueChange = {
-                            if (it.length <= 10) vehicleNumber.value = it
-                        },
-                        label = { Text("차량 번호") },
-                        modifier = Modifier
-                            .weight(1f) // 전체 Row 공간의 50% 차지
-                            .padding(end = 5.dp) // 오른쪽 간격 5.dp 추가로 세팅해 간격 설정
-                    )
+                TextField(
+                    value = name.value,
+                    onValueChange = {
+                        if (it.length <= 20) name.value = it
+                    },
+                    label = { Text("이름") },
+                    modifier = Modifier.weight(1f).padding(end = 5.dp)
+                )
 
-                    TextField(
-                        value = mileage.value,
-                        onValueChange = {
-                            if (it.length <= 10 && it.all { char ->
-                                    char.isDigit() || char == ',' || char == 'm' || char == 'i' || char == 'k' || char == 'l' || char == 'e'|| char == '.'
-                                }) {
-                                mileage.value = it
-                            }
-                        },
-                        label = { Text("주행거리") },
-                        modifier = Modifier
-                            .weight(1f) // 전체 Row 공간의 50% 차지
-                            .padding(start = 5.dp) // 왼쪽 간격 5.dp 추가로 세팅해 간격 설정
-                    )
-                }
+                TextField(
+                    value = contact.value,
+                    onValueChange = {
+                        if (it.length <= 15 && it.all { char -> char.isDigit() || char == '-' }) {
+                            contact.value = it
+                        }
+                    },
+                    label = { Text("연락처") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    modifier = Modifier.weight(1f).padding(start = 5.dp)
+                )
             }
 
 
-
-
-
-
-
-//            DropdownMenu(
-//                expanded = true,
-//                onDismissRequest = { /* Do something */ }
-//            ) {
-//                classificationItems.forEach { classification ->
-//                    DropdownMenuItem(onClick = {
-//                        selectedCategory.value = classification.type }
-//                    ) {
-//                        Text(classification.type)
-//                    }
-//                }
-//            }
+            // 비고
+            TextField(
+                value = remarks.value,
+                onValueChange = { remarks.value = it },
+                label = { Text("비고") },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)
+            )
 
             Button(onClick = {
-                val newUser = UserRecordType(
-//                    id = userModel.getUsers().size + 1, // 간단한 ID 할당
+                val newUser = UserAddType(
                     id = 1,
-                    date = "2023-10-01", // 예시 날짜, 실제 프로그램에서는 현재 날짜 필요
+                    dbName = "garage_db",
+                    date = date.value,
                     vehicleNumber = vehicleNumber.value,
-                    model = "",
-                    vehicleFormat = "Sedan", // 예시 포맷, 실제 프로그램에서는 입력 받기
-                    engine = "V8", // 예시 엔진, 실제 프로그램에서는 입력 받기
-                    manufactureYear = Date(), // 예시 제조 연도, 실제 프로그램에서는 입력 받기
-                    mileage = mileage.value, // 예시 주행 거리, 실제 프로그램에서는 입력 받기
-                    category1 = selectedCategory.value,
-                    category2 = "",
-                    category3 = "",
-                    item = "",
-                    quantity = 0,
-                    unitPrice = "",
-                    amount = "",
                     name = name.value,
                     contact = contact.value,
-                    remarks = ""
+                    remarks = remarks.value
                 )
-//                userModel.addUser(newUser)
+                // Add newUser to your model here
                 onCloseCallback()
             }) {
                 Text("추가")
