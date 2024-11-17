@@ -435,7 +435,6 @@ fun main() = application {
                 }
             }
 
-            //테스트
 
 //            Box(
 //                modifier = Modifier.fillMaxSize(),
