@@ -2,13 +2,14 @@ import org.codehaus.groovy.tools.shell.util.Preferences.put
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat.*
 
 plugins {
-    kotlin("jvm")
-    id("org.jetbrains.compose")
-    id("org.jetbrains.kotlin.plugin.compose")
+    kotlin("jvm") version "1.9.21"
+    id("org.jetbrains.compose") version "1.5.11"
+    kotlin("plugin.serialization") version "1.9.21"
+//    id("org.jetbrains.kotlin.plugin.compose") version "1.9.21"
 }
 
 group = "com.zime"
-version = "1.0.2"
+version = "1.0.3"
 
 repositories {
     mavenCentral()
@@ -18,9 +19,12 @@ repositories {
 
 dependencies {
     implementation(compose.desktop.currentOs)
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
-    implementation("org.jetbrains.compose.ui:ui:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+//    implementation("org.jetbrains.compose.ui:ui:1.6.0")
 //    implementation ("org.jetbrains.androidx.lifecycle:lifecycle-common:2.8.4")
+//    implementation(kotlin("stdlib"))
+    implementation(compose.material3)
+    implementation(compose.materialIconsExtended)
     implementation(kotlin("stdlib"))
 }
 compose.desktop {
