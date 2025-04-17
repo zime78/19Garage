@@ -2,10 +2,10 @@ import org.codehaus.groovy.tools.shell.util.Preferences.put
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat.*
 
 plugins {
-    kotlin("jvm") version "1.9.21"
-    id("org.jetbrains.compose") version "1.5.11"
-    kotlin("plugin.serialization") version "1.9.21"
-//    id("org.jetbrains.kotlin.plugin.compose") version "1.9.21"
+    kotlin("jvm") version "2.0.0"
+    id("org.jetbrains.compose") version "1.7.3"
+    kotlin("plugin.serialization") version "2.0.0"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.0.0" // 추가된 부분
 }
 
 group = "com.zime"
@@ -19,7 +19,7 @@ repositories {
 
 dependencies {
     implementation(compose.desktop.currentOs)
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
 //    implementation("org.jetbrains.compose.ui:ui:1.6.0")
 //    implementation ("org.jetbrains.androidx.lifecycle:lifecycle-common:2.8.4")
 //    implementation(kotlin("stdlib"))
@@ -51,7 +51,6 @@ compose.desktop {
                 targetFormats(Dmg)
             }
         }
-
     }
 }
 
