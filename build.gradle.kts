@@ -23,6 +23,10 @@ dependencies {
 //    implementation("org.jetbrains.compose.ui:ui:1.6.0")
 //    implementation ("org.jetbrains.androidx.lifecycle:lifecycle-common:2.8.4")
 //    implementation(kotlin("stdlib"))
+    // 기존 의존성
+    implementation("org.jetbrains.compose.ui:ui-tooling:1.7.3")
+    implementation("org.jetbrains.compose.ui:ui-tooling-preview:1.7.3")
+
     implementation(compose.material3)
     implementation(compose.materialIconsExtended)
     implementation(kotlin("stdlib"))
