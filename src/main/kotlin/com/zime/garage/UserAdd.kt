@@ -19,7 +19,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.rememberWindowState
 import com.zime.garage.db.type.UserAddType
-import com.zime.garage.db.viewModel.classificationModel
+import com.zime.garage.db.viewModel.ClassificationModel
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.foundation.layout.Box
@@ -29,6 +29,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import com.zime.garage.common.SimpleDatePicker
+import androidx.compose.material.Card
+import androidx.compose.material.Divider
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 
 /**
  * ViewUserAdd 내용만 포함한 컴포저블 - Preview용
@@ -64,6 +69,7 @@ fun ViewUserAddPreview() {
 /**
  * 사용자 추가 화면의 공통 UI 부분
  * ViewUserAdd와 ViewUserAddPreview에서 공통으로 사용
+ * 미리보기 기능 포함
  */
 @Composable
 fun UserAddContent(
@@ -77,6 +83,8 @@ fun UserAddContent(
     onCloseClick: () -> Unit = {}
 ) {
     val scrollState = rememberScrollState()
+    // 미리보기 표시 상태 관리
+    var showPreview by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -145,12 +153,151 @@ fun UserAddContent(
             modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)
         )
 
-        Button(onClick = onAddClick) {
-            Text("추가")
+        // 미리보기 토글 버튼
+        Button(
+            onClick = { showPreview = !showPreview },
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+        ) {
+            Text(if (showPreview) "미리보기 숨기기" else "미리보기 보기")
         }
 
-        Button(onClick = onCloseClick) {
-            Text("닫기")
+        // 미리보기 카드
+        if (showPreview) {
+            PreviewCard(
+                date = date.value,
+                vehicleNumber = vehicleNumber.value,
+                name = name.value,
+                contact = contact.value,
+                remarks = remarks.value
+            )
+        }
+
+        // 구분선
+        Divider(
+            modifier = Modifier.padding(vertical = 16.dp),
+            color = Color.Gray,
+            thickness = 1.dp
+        )
+
+        // 액션 버튼들
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onAddClick,
+                modifier = Modifier.weight(1f).padding(end = 8.dp)
+            ) {
+                Text("추가")
+            }
+
+            Button(
+                onClick = onCloseClick,
+                modifier = Modifier.weight(1f).padding(start = 8.dp)
+            ) {
+                Text("닫기")
+            }
+        }
+    }
+}
+
+/**
+ * 입력된 데이터를 미리보기로 보여주는 카드 컴포저블
+ * 사용자가 입력한 모든 정보를 실시간으로 표시
+ */
+@Composable
+fun PreviewCard(
+    date: String,
+    vehicleNumber: String,
+    name: String,
+    contact: String,
+    remarks: String
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        elevation = 4.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // 미리보기 제목
+            Text(
+                text = "입력 정보 미리보기",
+                style = MaterialTheme.typography.h6,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 12.dp),
+                textAlign = TextAlign.Center
+            )
+            
+            // 날짜 정보
+            PreviewItem(
+                label = "날짜",
+                value = date.ifEmpty { "입력되지 않음" }
+            )
+            
+            // 차량번호 정보
+            PreviewItem(
+                label = "차량번호",
+                value = vehicleNumber.ifEmpty { "입력되지 않음" }
+            )
+            
+            // 이름 정보
+            PreviewItem(
+                label = "이름",
+                value = name.ifEmpty { "입력되지 않음" }
+            )
+            
+            // 연락처 정보
+            PreviewItem(
+                label = "연락처",
+                value = contact.ifEmpty { "입력되지 않음" }
+            )
+            
+            // 비고 정보
+            PreviewItem(
+                label = "비고",
+                value = remarks.ifEmpty { "입력되지 않음" },
+                isLast = true
+            )
+        }
+    }
+}
+
+/**
+ * 미리보기 카드 내부의 개별 항목을 표시하는 컴포저블
+ */
+@Composable
+fun PreviewItem(
+    label: String,
+    value: String,
+    isLast: Boolean = false
+) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "$label:",
+                fontWeight = FontWeight.Medium,
+                color = Color.Gray
+            )
+            Text(
+                text = value,
+                fontWeight = FontWeight.Normal,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.End
+            )
+        }
+        
+        if (!isLast) {
+            Divider(
+                modifier = Modifier.padding(vertical = 8.dp),
+                color = Color.LightGray,
+                thickness = 0.5.dp
+            )
         }
     }
 }
@@ -175,7 +322,7 @@ fun ViewUserAdd(onCloseCallback: () -> Unit) {
     val remarks = remember { mutableStateOf("") }
 
     //model
-    val classificationModel = classificationModel()
+    val classificationModel = ClassificationModel()
 //    val classificationItems = classificationModel.loadClassificationFile()
 //    val selectedCategory = remember { mutableStateOf("") }
 

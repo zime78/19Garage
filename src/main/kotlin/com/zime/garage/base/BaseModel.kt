@@ -1,35 +1,9 @@
 package com.zime.garage.base
 
-open class BaseModel() {
-
-//    private var connection: Connection? = null
-//
-//    object DBBaseModel {
-//        val dbName = "db/sample.db"
-//    }
-//
-//    init {
-//        connection = DriverManager.getConnection("jdbc:sqlite:$dbName")
-//        createTable()
-//    }
-
-//    private fun createTable() {
-//        connection?.createStatement()?.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT NOT NULL)")
-//    }
-//
-//    fun insertUser(name: String) {
-//        val statement = connection?.prepareStatement("INSERT INTO users(name) VALUES (?)")
-//        statement?.setString(1, name)
-//        statement?.executeUpdate()
-//    }
-//
-//    fun getAllUsers(): List<String> {
-//        val users = mutableListOf<String>()
-//        val resultSet: ResultSet? = connection?.createStatement()?.executeQuery("SELECT * FROM users")
-//        while (resultSet?.next() == true) {
-//            users.add(resultSet.getString("name"))
-//        }
-//        return users
-//    }
-
-}
+/**
+ * 기본 모델 클래스
+ * 
+ * 현재는 공통 기능이 없어 빈 클래스로 유지됩니다.
+ * 향후 공통 기능이 필요할 경우 이 클래스에 추가할 수 있습니다.
+ */
+open class BaseModel()

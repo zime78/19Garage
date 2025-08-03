@@ -16,7 +16,7 @@ import kotlinx.serialization.json.*
  *
  */
 
-class itemsModel: BaseModel() {
+class ItemsModel: BaseModel() {
 
     fun setDefaultItemsFile() {
         val file = openFile(FileType.ITEMS)

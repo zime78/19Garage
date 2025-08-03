@@ -16,7 +16,7 @@ import kotlinx.serialization.json.*
  *
  */
 
-class vehicleModelModel: BaseModel() {
+class VehicleModelModel: BaseModel() {
 
     fun setDefaultVehicleModelFile() {
         val file = openFile(FileType.VEHICLE_MODEL)
@@ -41,9 +41,7 @@ class vehicleModelModel: BaseModel() {
             } catch (e: Exception) {
                 println("setDefaultVehicleModelFile Json load error: $e")
             } finally {
-                runBlocking {
-                    closeFile(file)
-                }
+                closeFile(file)
             }
         }
     }
@@ -70,12 +68,10 @@ class vehicleModelModel: BaseModel() {
                 } ?: emptyList()
 
             } catch (e: Exception) {
-                println("loadVehicleFormatFile Json load error: $e")
+                println("loadVehicleModelFile Json load error: $e")
                 emptyList()
             } finally {
-                runBlocking {
-                    closeFile(file)
-                }
+                closeFile(file)
             }
         } ?: emptyList()
     }

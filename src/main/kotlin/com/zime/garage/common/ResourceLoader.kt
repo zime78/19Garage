@@ -1,5 +1,10 @@
 package com.zime.garage.common
 
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import org.jetbrains.skia.Image
+
 object ResourceLoader {
     private val properties: Map<String, String> = mapOf(
         "tooltip_setting" to "내부 설정값을 변경합니다.",
@@ -9,5 +14,14 @@ object ResourceLoader {
 
     fun getString(key: String): String {
         return properties[key] ?: error("Resource not found: $key")
+    }
+    
+    fun painterResource(resourcePath: String): Painter {
+        return BitmapPainter(
+            Image.makeFromEncoded(
+                ResourceLoader::class.java.classLoader.getResourceAsStream(resourcePath)?.readBytes()
+                    ?: error("Resource not found: $resourcePath")
+            ).toComposeImageBitmap()
+        )
     }
 }

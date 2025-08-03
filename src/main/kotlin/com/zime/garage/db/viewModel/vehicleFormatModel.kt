@@ -15,7 +15,7 @@ import kotlinx.serialization.json.*
  * default 값 : 유럽형,, 북미형, MHD, 유럽형 브라부스, 북미형 브라부스
  *
  */
-class vehicleFormatModel: BaseModel() {
+class VehicleFormatModel: BaseModel() {
 
     fun setDefaultVehicleFormatFile() {
         val file = openFile(FileType.VEHICLE_FORMAT)

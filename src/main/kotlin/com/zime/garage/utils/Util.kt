@@ -38,8 +38,7 @@ class Util {
 
             val path = Paths.get(basePath, dbName).toString()
             println("path] Database Path : $path")
-            return if(isFilePath) path
-            else path
+            return path
         }
         fun requestFileAccess() {
             val fileChooser = JFileChooser()

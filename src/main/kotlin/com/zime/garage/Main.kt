@@ -21,27 +21,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.*
 import java.awt.Toolkit.*
 import com.zime.garage.common.ResourceLoader
 
-enum class ButtionState {
+enum class ButtonState {
     NONE,
     VIEW_USER_ADD,
-    BUTTION_2,
-    BUTTION_3,
-    BUTTION_4,
-    BUTTION_DB,
+    BUTTON_2,
+    BUTTON_3,
+    BUTTON_4,
+    BUTTON_DB,
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 @Preview
 fun HomeView() {
-    var buttionState by remember { mutableStateOf(ButtionState.NONE) }
+    var buttonState by remember { mutableStateOf(ButtonState.NONE) }
 
 //    var text by remember { mutableStateOf("Hello, World!") }
     MaterialTheme(
@@ -65,7 +64,7 @@ fun HomeView() {
                 verticalAlignment = Alignment.CenterVertically // 항목 수직 정렬
             ) {
                 Button(onClick = {
-                    buttionState = ButtionState.VIEW_USER_ADD
+                    buttonState = ButtonState.VIEW_USER_ADD
                 }) {
                     Text("고객 추가")
                 }
@@ -113,7 +112,7 @@ fun HomeView() {
                                 }
                             ) {
                                 Image(
-                                    painter = painterResource("img/icon_reload.png"),
+                                    painter = ResourceLoader.painterResource("img/icon_reload.png"),
                                     contentDescription = "Setting Image",
                                     modifier = Modifier
                                         .size(35.dp) // 이미지 크기 지정 (width, height 동시 설정)
@@ -148,7 +147,7 @@ fun HomeView() {
                             ) {
 
                                 Image(
-                                    painter = painterResource("img/icon_setting.png"),
+                                    painter = ResourceLoader.painterResource("img/icon_setting.png"),
                                     contentDescription = "Setting Image",
                                     modifier = Modifier
                                         .size(35.dp) // 이미지 크기 지정 (width, height 동시 설정)
@@ -208,9 +207,9 @@ fun HomeView() {
 
     }
 
-    when (buttionState) {
-        ButtionState.VIEW_USER_ADD -> {
-            ViewUserAdd(onCloseCallback = { buttionState = ButtionState.NONE })
+    when (buttonState) {
+        ButtonState.VIEW_USER_ADD -> {
+            ViewUserAdd(onCloseCallback = { buttonState = ButtonState.NONE })
         } else -> {
 
         }
@@ -278,12 +277,16 @@ fun UserList() {
 //                    modifier = Modifier.padding(vertical = 4.dp)
 //                )
 //            }
-            items(users) { userInfo ->
-                UserInfoItem(userInfo = userInfo, onClick = {
-                    println("User Clicked: $it")
-                    selectedUser = it
-                })
-            }
+
+
+            // TODO 사용자 정보를 항목으로 표시합니다.(테스트)
+//            items(users) { userInfo ->
+//                UserInfoItem(userInfo = userInfo, onClick = {
+//                    println("User Clicked: $it")
+//                    selectedUser = it
+//                })
+//            }
+
         }
 
         // 항상 표시되는 스크롤바를 추가합니다.

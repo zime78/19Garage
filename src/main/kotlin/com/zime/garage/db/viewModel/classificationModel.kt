@@ -18,7 +18,7 @@ import kotlinx.serialization.json.*
  *
  */
 
-class classificationModel(): BaseModel() {
+class ClassificationModel(): BaseModel() {
 
     fun setDefaultClassificationFile() {
         val file = openFile(FileType.CLASSIFICATION)

@@ -16,7 +16,7 @@ import kotlinx.serialization.json.*
  *
  */
 
-class improvementModel: BaseModel() {
+class ImprovementModel: BaseModel() {
 
     fun setDefaultImprovementFile() {
         val file = openFile(FileType.IMPROVEMENT)

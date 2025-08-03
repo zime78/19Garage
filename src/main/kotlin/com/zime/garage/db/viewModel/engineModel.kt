@@ -10,7 +10,7 @@ import com.zime.garage.db.type.EngineType
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.*
 
-class engineModel: BaseModel() {
+class EngineModel: BaseModel() {
 
     fun setDefaultEngineFile() {
         val file = openFile(FileType.ENGINE_FORMAT)
