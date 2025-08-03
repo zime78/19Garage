@@ -7,6 +7,8 @@ import com.zime.garage.utils.Util.Companion.getDatabasePath
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import kotlinx.serialization.json.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
  * 로컬 파일 관리자
@@ -37,7 +39,10 @@ object LocalFileManager {
         /** 분류 파일 */
         CLASSIFICATION,
         /** 아이템 파일 */
-        ITEMS
+        ITEMS,
+        /** 사용자 데이터 파일 */
+        USER_DATA, // 사용자 데이터 파일 (user_%s.db)
+        USER_LIST // 사용자 리스트 파일 (user_list.txt)
     }
 
     // === 데이터베이스 파일 경로 설정 ===
@@ -54,6 +59,10 @@ object LocalFileManager {
     /** 아이템 데이터 파일 경로 */
     private val fileItems = getDatabasePath("db/items.txt", true)
 
+    /** 사용자 데이터 파일 경로 (user_%s.db), 사용자 리스트 파일 경로 */
+    private val fileUserData = getDatabasePath("db/user/user_%s.db", true)
+    private val fileUserList = getDatabasePath("db/user_list.txt", true)
+
     // === 데이터베이스 모델 인스턴스 ===
     /** 차량 모델 데이터베이스 모델 */
     private var dbVehicleModelModel: VehicleModelModel
@@ -67,6 +76,9 @@ object LocalFileManager {
     private var dbClassificationModel: ClassificationModel
     /** 아이템 데이터베이스 모델 */
     private var dbItemsModel: ItemsModel
+
+    /** 사용자 데이터베이스 모델 (사용자 차량번호에 따라 다름) */
+    private var dbUserModel: UserModel
 
     // === 테스트용 파일 경로 ===
     /** 테스트용 텍스트 데이터 파일 경로 */
@@ -91,6 +103,7 @@ object LocalFileManager {
         dbImprovementModel = ImprovementModel()
         dbClassificationModel = ClassificationModel()
         dbItemsModel = ItemsModel()
+        dbUserModel = UserModel()
     }
 
     /**
@@ -108,6 +121,7 @@ object LocalFileManager {
             dbImprovementModel.setDefaultImprovementFile()
             dbClassificationModel.setDefaultClassificationFile()
             dbItemsModel.setDefaultItemsFile()
+            dbUserModel.setDefaultItemsFile()
         }
     }
 
@@ -117,10 +131,11 @@ object LocalFileManager {
      * 지정된 데이터베이스 타입에 해당하는 파일 객체를 반환합니다.
      * 
      * @param dbType 데이터베이스 파일 타입
+     * @param carNumber 차량 번호 (사용자 데이터 파일에만 사용)
      * @return 파일 객체 (연결 실패 시 null)
      * @throws Exception 파일 연결 오류 발생 시
      */
-    fun openFile(dbType: FileType): File? {
+    fun openFile(dbType: FileType, carNumber: String = ""): File? {
         return try {
             val fileConnection = when (dbType) {
                 FileType.VEHICLE_MODEL -> File(fileVehicleModel)
@@ -129,6 +144,8 @@ object LocalFileManager {
                 FileType.IMPROVEMENT -> File(fileImprovement)
                 FileType.CLASSIFICATION -> File(fileClassification)
                 FileType.ITEMS -> File(fileItems)
+                FileType.USER_DATA -> File(fileUserData.format(carNumber))
+                FileType.USER_LIST -> File(fileUserList)
             }
             if (DEBUG_LOG)
                 println("파일 연결 : $dbType, ${fileConnection.path}")
@@ -170,6 +187,182 @@ object LocalFileManager {
             }
         } catch (e: Exception) {
             println("LocalFileManager 로드 오류: $e")
+        }
+    }
+
+    /**
+     * 사용자 리스트 파일에 새 사용자 정보 추가
+     * 
+     * @param vehicleNumber 차량 번호
+     * @param registrationDate 등록 날짜
+     * @param contact 연락처
+     * @param name 이름
+     * @param remarks 비고
+     * @return 생성된 인덱스 번호
+     */
+    fun addUserToList(
+        vehicleNumber: String,
+        registrationDate: String,
+        contact: String,
+        name: String,
+        remarks: String
+    ): Int {
+        return try {
+            val userListFile = openFile(FileType.USER_LIST)
+            if (userListFile == null) {
+                println("사용자 리스트 파일 연결 실패")
+                return -1
+            }
+
+            // 기존 사용자 리스트 로드하여 다음 인덱스 계산
+            val existingUsers = loadUserList()
+            val nextIndex = if (existingUsers.isEmpty()) 1 else existingUsers.maxOf { it.split(",")[0].toInt() } + 1
+
+            // 사용자 데이터베이스 파일명 생성
+            val dbFileName = "user_$vehicleNumber.db"
+
+            // 새 사용자 정보 라인 생성 (인덱스, 차량번호, 등록일자, 연락처, 이름, 비고, DB파일명)
+            val userLine = "$nextIndex,$vehicleNumber,$registrationDate,$contact,$name,$remarks,$dbFileName"
+
+            // 파일에 추가
+            userListFile.appendText("$userLine\n")
+
+            if (DEBUG_LOG) {
+                println("사용자 리스트에 추가됨: $userLine")
+            }
+
+            closeFile(userListFile)
+            nextIndex
+        } catch (e: Exception) {
+            println("사용자 리스트 추가 오류: ${e.message}")
+            e.printStackTrace()
+            -1
+        }
+    }
+
+    /**
+     * 사용자 리스트 파일 로드
+     * 
+     * @return 사용자 리스트 (각 라인은 "인덱스,차량번호,등록일자,연락처,이름,비고,DB파일명" 형식)
+     */
+    fun loadUserList(): List<String> {
+        return try {
+            val userListFile = openFile(FileType.USER_LIST)
+            if (userListFile == null || !userListFile.exists()) {
+                if (DEBUG_LOG) {
+                    println("사용자 리스트 파일이 존재하지 않음")
+                }
+                return emptyList()
+            }
+
+            val userList = userListFile.readLines().filter { it.trim().isNotEmpty() }
+            
+            if (DEBUG_LOG) {
+                println("사용자 리스트 로드 완료: ${userList.size}개 항목")
+            }
+
+            closeFile(userListFile)
+            userList
+        } catch (e: Exception) {
+            println("사용자 리스트 로드 오류: ${e.message}")
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+    /**
+     * 사용자 데이터를 개별 사용자 DB 파일에 JSON 형식으로 저장
+     * 
+     * @param vehicleNumber 차량 번호
+     * @param index 사용자 인덱스
+     * @param date 등록 날짜
+     * @param name 이름
+     * @param contact 연락처
+     * @param remarks 비고
+     * @param dbName 데이터베이스 파일명
+     * @return 저장 성공 여부
+     */
+    fun saveUserDataToJson(
+        vehicleNumber: String,
+        index: Int,
+        date: String,
+        name: String,
+        contact: String,
+        remarks: String,
+        dbName: String
+    ): Boolean {
+        return try {
+            val userDbFile = openFile(FileType.USER_DATA, vehicleNumber)
+            if (userDbFile == null) {
+                println("사용자 데이터베이스 파일 연결 실패")
+                return false
+            }
+
+            // 사용자 데이터를 JSON 형식으로 생성
+            val userData = buildJsonObject {
+                put("index", index)
+                put("vehicleNumber", vehicleNumber)
+                put("registrationDate", date)
+                put("name", name)
+                put("contact", contact)
+                put("remarks", remarks)
+                put("dbName", dbName)
+                put("createdAt", SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.KOREA).format(Date()))
+            }
+
+            // JSON 파일에 저장
+            userDbFile.writeText(Json.encodeToString(JsonElement.serializer(), userData))
+
+            if (DEBUG_LOG) {
+                println("사용자 데이터 JSON 저장 완료: ${userDbFile.name}")
+                println("저장된 데이터: ${userDbFile.readText()}")
+            }
+
+            closeFile(userDbFile)
+            true
+        } catch (e: Exception) {
+            println("사용자 데이터 JSON 저장 오류: ${e.message}")
+            e.printStackTrace()
+            false
+        }
+    }
+
+    /**
+     * 차량번호 중복 검증 함수
+     * 
+     * 기존 사용자 리스트에서 동일한 차량번호가 있는지 확인합니다.
+     * 
+     * @param vehicleNumber 검증할 차량번호
+     * @return 중복이면 true, 중복이 아니면 false
+     */
+    fun isVehicleNumberDuplicate(vehicleNumber: String): Boolean {
+        return try {
+            val existingUsers = loadUserList()
+            
+            // 기존 사용자 리스트에서 차량번호 중복 확인
+            val isDuplicate = existingUsers.any { userLine ->
+                val parts = userLine.split(",")
+                if (parts.size >= 2) {
+                    val existingVehicleNumber = parts[1].trim() // 두 번째 필드가 차량번호
+                    existingVehicleNumber.equals(vehicleNumber.trim(), ignoreCase = true)
+                } else {
+                    false
+                }
+            }
+            
+            if (DEBUG_LOG) {
+                if (isDuplicate) {
+                    println("차량번호 중복 발견: $vehicleNumber")
+                } else {
+                    println("차량번호 중복 없음: $vehicleNumber")
+                }
+            }
+            
+            isDuplicate
+        } catch (e: Exception) {
+            println("차량번호 중복 검증 오류: ${e.message}")
+            e.printStackTrace()
+            false // 오류 발생 시 중복이 아닌 것으로 처리
         }
     }
 
