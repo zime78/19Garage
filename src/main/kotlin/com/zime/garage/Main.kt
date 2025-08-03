@@ -29,15 +29,23 @@ import androidx.compose.ui.window.*
 import java.awt.Toolkit.*
 import com.zime.garage.common.ResourceLoader
 
+/**
+ * 버튼 상태를 나타내는 열거형
+ * 애플리케이션의 현재 화면 상태를 관리하는데 사용됩니다.
+ */
 enum class ButtonState {
-    NONE,
-    VIEW_USER_ADD,
-    BUTTON_2,
-    BUTTON_3,
-    BUTTON_4,
-    BUTTON_DB,
+    NONE,           // 기본 상태
+    VIEW_USER_ADD,  // 고객 추가 화면
+    BUTTON_2,       // 버튼 2 상태 (미사용)
+    BUTTON_3,       // 버튼 3 상태 (미사용)
+    BUTTON_4,       // 버튼 4 상태 (미사용)
+    BUTTON_DB,      // 데이터베이스 관련 상태 (미사용)
 }
 
+/**
+ * 메인 홈 화면을 구성하는 컴포저블 함수
+ * 고객 추가, 설정, 다시 읽기 기능과 사용자 목록을 표시합니다.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 @Preview
@@ -45,6 +53,7 @@ fun HomeView() {
     var buttonState by remember { mutableStateOf(ButtonState.NONE) }
     var reloadTrigger by remember { mutableStateOf(0) } // 리스트 갱신 트리거
     var showReloadConfirmDialog by remember { mutableStateOf(false) } // 다시 읽기 확인 다이얼로그
+    var showSettingsDialog by remember { mutableStateOf(false) } // 설정 다이얼로그 표시 상태
 
 //    var text by remember { mutableStateOf("Hello, World!") }
     MaterialTheme(
@@ -152,14 +161,17 @@ fun HomeView() {
                                 }
                             ) {
 
+                                // 임시로 텍스트 버튼 사용 (리소스 로딩 문제 해결을 위해)
                                 Image(
                                     painter = ResourceLoader.painterResource("img/icon_setting.png"),
                                     contentDescription = "Setting Image",
                                     modifier = Modifier
                                         .size(35.dp) // 이미지 크기 지정 (width, height 동시 설정)
                                         .clickable(onClick = {
-                                            println("Setting Image Clicked")
-                                        }) // 클릭 이벤트 추가
+                                            println("설정 아이콘 클릭됨")
+                                            // 설정 다이얼로그 표시
+                                            showSettingsDialog = true
+                                        }) // 설정 아이콘 클릭 이벤트
                                 )
                             }
                         }
@@ -234,6 +246,16 @@ fun HomeView() {
             },
             onDismiss = {
                 showReloadConfirmDialog = false
+            }
+        )
+    }
+    
+    // 설정 다이얼로그
+    if (showSettingsDialog) {
+        SettingsDialog(
+            onDismiss = {
+                showSettingsDialog = false
+                println("[INFO] 설정 다이얼로그가 닫혔습니다.")
             }
         )
     }
