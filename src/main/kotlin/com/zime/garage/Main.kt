@@ -311,7 +311,7 @@ fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "회원 추가 버튼을 클릭하여 새 사용자를 등록하세요.",
+                            text = "고객 추가 버튼을 클릭하여 새 사용자를 등록하세요.",
                             fontSize = 14.sp,
                             color = Color.Gray
                         )
@@ -368,33 +368,93 @@ data class UserInfo(
 
 /**
  * LocalFileManager에서 사용자 데이터를 로드하여 UserInfo 객체 리스트로 변환
+ * DB 파일이 실제로 존재하는지 확인하고, 존재하지 않는 항목은 리스트에서 제거
  * 
- * @return UserInfo 객체 리스트
+ * @return UserInfo 객체 리스트 (DB 파일이 존재하는 항목만)
  */
 fun loadUsersFromFile(): List<UserInfo> {
     return try {
         val userDataList = LocalFileManager.loadUserList()
+        val validUsers = mutableListOf<UserInfo>()
+        val validUserLines = mutableListOf<String>()
+        var hasInvalidEntries = false
         
-        userDataList.mapNotNull { userLine ->
+        userDataList.forEach { userLine ->
             val parts = userLine.split(",")
             if (parts.size >= 7) {
-                // 사용자 리스트 파일 형식: "인덱스,차량번호,등록일자,연락처,이름,비고,DB파일명"
-                UserInfo(
-                    name = parts[4].trim(),           // 이름
-                    phoneNumber = parts[3].trim(),    // 연락처
-                    carNumber = parts[1].trim(),      // 차량번호
-                    registrationDate = parts[2].trim(), // 등록일자
-                    dbFileName = parts[6].trim()      // DB파일명 (user_%s.db)
-                )
+                val carNumber = parts[1].trim()
+                val dbFileName = parts[6].trim()
+                
+                // DB 파일 존재 여부 확인
+                val dbFile = LocalFileManager.openFile(LocalFileManager.FileType.USER_DATA, carNumber)
+                val dbFileExists = dbFile?.exists() == true
+                
+                if (dbFileExists) {
+                    // DB 파일이 존재하는 경우만 리스트에 추가
+                    val userInfo = UserInfo(
+                        name = parts[4].trim(),           // 이름
+                        phoneNumber = parts[3].trim(),    // 연락처
+                        carNumber = carNumber,            // 차량번호
+                        registrationDate = parts[2].trim(), // 등록일자
+                        dbFileName = dbFileName           // DB파일명 (user_%s.db)
+                    )
+                    validUsers.add(userInfo)
+                    validUserLines.add(userLine)
+                    
+                    println("[DEBUG] DB 파일 존재 확인: $dbFileName - 존재함")
+                } else {
+                    // DB 파일이 존재하지 않는 경우
+                    hasInvalidEntries = true
+                    println("[WARNING] DB 파일이 존재하지 않아 리스트에서 제외: $dbFileName (차량번호: $carNumber)")
+                }
+                
+                // 파일 연결 해제
+                LocalFileManager.closeFile(dbFile)
             } else {
                 println("[WARNING] 잘못된 사용자 데이터 형식: $userLine")
-                null
+                hasInvalidEntries = true
             }
         }
+        
+        // 유효하지 않은 항목이 있었다면 사용자 리스트 파일 업데이트
+        if (hasInvalidEntries && validUserLines.size != userDataList.size) {
+            updateUserListFile(validUserLines)
+            println("[INFO] 사용자 리스트 파일 업데이트 완료: ${userDataList.size - validUserLines.size}개 항목 제거됨")
+        }
+        
+        validUsers
     } catch (e: Exception) {
         println("[ERROR] 사용자 데이터 로드 중 오류: ${e.message}")
         e.printStackTrace()
         emptyList()
+    }
+}
+
+/**
+ * 사용자 리스트 파일을 유효한 항목들로만 업데이트
+ * 
+ * @param validUserLines 유효한 사용자 데이터 라인들
+ */
+fun updateUserListFile(validUserLines: List<String>) {
+    try {
+        val userListFile = LocalFileManager.openFile(LocalFileManager.FileType.USER_LIST)
+        if (userListFile != null) {
+            // 기존 파일 내용을 유효한 항목들로 덮어쓰기
+            val content = validUserLines.joinToString("\n")
+            if (content.isNotEmpty()) {
+                userListFile.writeText("$content\n")
+            } else {
+                userListFile.writeText("")
+            }
+            
+            LocalFileManager.closeFile(userListFile)
+            println("[DEBUG] 사용자 리스트 파일 업데이트 성공: ${validUserLines.size}개 항목")
+        } else {
+            println("[ERROR] 사용자 리스트 파일 연결 실패")
+        }
+    } catch (e: Exception) {
+        println("[ERROR] 사용자 리스트 파일 업데이트 중 오류: ${e.message}")
+        e.printStackTrace()
     }
 }
 
