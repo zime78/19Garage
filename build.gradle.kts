@@ -2,14 +2,14 @@ import org.codehaus.groovy.tools.shell.util.Preferences.put
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat.*
 
 plugins {
-    kotlin("jvm") version "2.0.0"
-    id("org.jetbrains.compose") version "1.7.3"
-    kotlin("plugin.serialization") version "2.0.0"
-    id("org.jetbrains.kotlin.plugin.compose") version "2.0.0" // 추가된 부분
+    kotlin("jvm") version "2.2.0"
+    id("org.jetbrains.compose") version "1.8.2"
+    kotlin("plugin.serialization") version "2.2.0"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.2.0" // 추가된 부분
 }
 
 group = "com.zime"
-version = "1.0.3"
+version = "1.0.0" // 버전 업데이트
 
 repositories {
     mavenCentral()
@@ -24,8 +24,8 @@ dependencies {
 //    implementation ("org.jetbrains.androidx.lifecycle:lifecycle-common:2.8.4")
 //    implementation(kotlin("stdlib"))
     // 기존 의존성
-    implementation("org.jetbrains.compose.ui:ui-tooling:1.7.3")
-    implementation("org.jetbrains.compose.ui:ui-tooling-preview:1.7.3")
+    implementation("org.jetbrains.compose.ui:ui-tooling:1.8.2")
+    implementation("org.jetbrains.compose.ui:ui-tooling-preview:1.8.2")
 
     implementation(compose.material3)
     implementation(compose.materialIconsExtended)
