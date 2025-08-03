@@ -470,4 +470,111 @@ object LocalFileManager {
             println("LocalFileManager JSON 로드 오류: $e")
         }
     }
+
+    // === 사용자 데이터 삭제 기능 섹션 ===
+
+    /**
+     * 모든 사용자 데이터 삭제 함수
+     * 
+     * 사용자 리스트 파일과 모든 개별 사용자 DB 파일들을 삭제합니다.
+     * 
+     * @return 삭제 성공 여부
+     */
+    fun clearAllUserData(): Boolean {
+        return try {
+            var allDeleted = true
+            
+            // 1. 기존 사용자 리스트 로드하여 개별 DB 파일들 삭제
+            val existingUsers = loadUserList()
+            existingUsers.forEach { userLine ->
+                val parts = userLine.split(",")
+                if (parts.size >= 2) {
+                    val vehicleNumber = parts[1].trim() // 차량번호
+                    val userDbDeleted = deleteUserDatabase(vehicleNumber)
+                    if (!userDbDeleted) {
+                        allDeleted = false
+                        println("[WARNING] 사용자 DB 파일 삭제 실패: user_$vehicleNumber.db")
+                    }
+                }
+            }
+            
+            // 2. 사용자 리스트 파일 삭제
+            val userListDeleted = deleteUserListFile()
+            if (!userListDeleted) {
+                allDeleted = false
+                println("[ERROR] 사용자 리스트 파일 삭제 실패")
+            }
+            
+            if (allDeleted) {
+                if (DEBUG_LOG) {
+                    println("[SUCCESS] 모든 사용자 데이터 삭제 완료")
+                }
+            } else {
+                println("[WARNING] 일부 파일 삭제 실패")
+            }
+            
+            allDeleted
+        } catch (e: Exception) {
+            println("[ERROR] 사용자 데이터 삭제 중 오류: ${e.message}")
+            e.printStackTrace()
+            false
+        }
+    }
+
+    /**
+     * 사용자 리스트 파일 삭제 함수
+     * 
+     * @return 삭제 성공 여부
+     */
+    private fun deleteUserListFile(): Boolean {
+        return try {
+            val userListFile = openFile(FileType.USER_LIST)
+            if (userListFile != null && userListFile.exists()) {
+                val deleted = userListFile.delete()
+                if (deleted && DEBUG_LOG) {
+                    println("[DEBUG] 사용자 리스트 파일 삭제 완료: ${userListFile.name}")
+                }
+                closeFile(userListFile)
+                deleted
+            } else {
+                if (DEBUG_LOG) {
+                    println("[DEBUG] 사용자 리스트 파일이 존재하지 않음")
+                }
+                true // 파일이 없으면 삭제 성공으로 간주
+            }
+        } catch (e: Exception) {
+            println("[ERROR] 사용자 리스트 파일 삭제 오류: ${e.message}")
+            e.printStackTrace()
+            false
+        }
+    }
+
+    /**
+     * 개별 사용자 DB 파일 삭제 함수
+     * 
+     * @param vehicleNumber 차량 번호
+     * @return 삭제 성공 여부
+     */
+    private fun deleteUserDatabase(vehicleNumber: String): Boolean {
+        return try {
+            val userDbFile = openFile(FileType.USER_DATA, vehicleNumber)
+            if (userDbFile != null && userDbFile.exists()) {
+                val deleted = userDbFile.delete()
+                if (deleted && DEBUG_LOG) {
+                    println("[DEBUG] 사용자 DB 파일 삭제 완료: ${userDbFile.name}")
+                }
+                closeFile(userDbFile)
+                deleted
+            } else {
+                if (DEBUG_LOG) {
+                    println("[DEBUG] 사용자 DB 파일이 존재하지 않음: user_$vehicleNumber.db")
+                }
+                true // 파일이 없으면 삭제 성공으로 간주
+            }
+        } catch (e: Exception) {
+            println("[ERROR] 사용자 DB 파일 삭제 오류: ${e.message}")
+            e.printStackTrace()
+            false
+        }
+    }
 }

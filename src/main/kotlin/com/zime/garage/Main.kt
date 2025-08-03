@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.*
@@ -41,6 +43,8 @@ enum class ButtonState {
 @Preview
 fun HomeView() {
     var buttonState by remember { mutableStateOf(ButtonState.NONE) }
+    var reloadTrigger by remember { mutableStateOf(0) } // 리스트 갱신 트리거
+    var showReloadConfirmDialog by remember { mutableStateOf(false) } // 다시 읽기 확인 다이얼로그
 
 //    var text by remember { mutableStateOf("Hello, World!") }
     MaterialTheme(
@@ -118,6 +122,8 @@ fun HomeView() {
                                         .size(35.dp) // 이미지 크기 지정 (width, height 동시 설정)
                                         .clickable(onClick = {
                                             println("다시 읽기 Clicked")
+                                            // 확인 다이얼로그 표시
+                                            showReloadConfirmDialog = true
                                         }) // 클릭 이벤트 추가
                                 )
                             }
@@ -198,7 +204,7 @@ fun HomeView() {
 //사용자 목록
             MaterialTheme {
                 Surface {
-                    UserList()
+                    UserList(buttonState = buttonState, reloadTrigger = reloadTrigger)
                 }
             }
 
@@ -214,79 +220,82 @@ fun HomeView() {
 
         }
     }
+
+    // 다시 읽기 확인 다이얼로그
+    if (showReloadConfirmDialog) {
+        ReloadConfirmDialog(
+            onConfirm = {
+                showReloadConfirmDialog = false
+                // 파일에서 데이터 다시 읽기
+                println("[INFO] 파일에서 사용자 데이터를 다시 읽어옵니다.")
+                // 리스트 갱신 트리거
+                reloadTrigger++
+                println("[SUCCESS] 사용자 데이터가 다시 로드되었습니다.")
+            },
+            onDismiss = {
+                showReloadConfirmDialog = false
+            }
+        )
+    }
 }
 
 @Composable
-fun UserList() {
+fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0) {
     val listState = rememberLazyListState() // LazyListState를 사용하여 스크롤 상태를 기억합니다.
     var selectedUser by remember { mutableStateOf<UserInfo?>(null) }
 
-    val users = listOf(
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
-        UserInfo(name = "이름", phoneNumber = "123-456-7890", carNumber = "ABC-1234"),
+    // 실제 사용자 데이터를 LocalFileManager에서 로드
+    var users by remember { mutableStateOf(loadUsersFromFile()) }
 
-        UserInfo(name = "Jane Smith", phoneNumber = "234-567-8901", carNumber = "XYZ-5678"),
-        UserInfo(name = "Alice Johnson", phoneNumber = "345-678-9012", carNumber = "DEF-9012")
-    )
+    // 새로고침 함수
+    fun refreshUserList() {
+        users = loadUsersFromFile()
+        println("[DEBUG] 사용자 리스트 새로고침 완료: ${users.size}개 항목")
+    }
+
+    // 컴포넌트가 처음 로드될 때와 buttonState가 변경될 때마다 자동 새로고침
+    // UserAdd 창이 닫힐 때(VIEW_USER_ADD -> NONE) 리스트 업데이트
+    // "다시 읽기" 버튼 클릭 시(reloadTrigger 변경) 리스트 업데이트
+    LaunchedEffect(buttonState, reloadTrigger) {
+        refreshUserList()
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState, // 스크롤 상태를 적용합니다.
             modifier = Modifier.fillMaxSize().padding(end = 12.dp) // 스크롤바와 겹치지 않도록 패딩을 추가합니다.
         ) {
-            // 리스트 항목을 추가합니다.
-//            items(itemCount) { index ->
-//                Text(
-//                    text = "User: $index",
-//                    fontSize = 18.sp,
-//                    modifier = Modifier.padding(vertical = 4.dp)
-//                )
-//            }
+            // 실제 사용자 정보를 항목으로 표시합니다.
+            items(users) { userInfo ->
+                UserInfoItem(userInfo = userInfo, onClick = {
+                    println("[DEBUG] 사용자 클릭: $it")
+                    selectedUser = it
+                })
+            }
 
-
-            // TODO 사용자 정보를 항목으로 표시합니다.(테스트)
-//            items(users) { userInfo ->
-//                UserInfoItem(userInfo = userInfo, onClick = {
-//                    println("User Clicked: $it")
-//                    selectedUser = it
-//                })
-//            }
-
+            // 사용자가 없을 때 안내 메시지 표시
+            if (users.isEmpty()) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "등록된 사용자가 없습니다.",
+                            fontSize = 18.sp,
+                            color = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "회원 추가 버튼을 클릭하여 새 사용자를 등록하세요.",
+                            fontSize = 14.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            }
         }
 
         // 항상 표시되는 스크롤바를 추가합니다.
@@ -330,23 +339,85 @@ fun calculateScrollbarHeight(listState: LazyListState): Float {
 data class UserInfo(
     val name: String,
     val phoneNumber: String,
-    val carNumber: String
+    val carNumber: String,
+    val registrationDate: String = "", // 등록일자 추가
+    val dbFileName: String = "" // user_%s.db 파일명 추가
 )
+
+/**
+ * LocalFileManager에서 사용자 데이터를 로드하여 UserInfo 객체 리스트로 변환
+ * 
+ * @return UserInfo 객체 리스트
+ */
+fun loadUsersFromFile(): List<UserInfo> {
+    return try {
+        val userDataList = LocalFileManager.loadUserList()
+        
+        userDataList.mapNotNull { userLine ->
+            val parts = userLine.split(",")
+            if (parts.size >= 7) {
+                // 사용자 리스트 파일 형식: "인덱스,차량번호,등록일자,연락처,이름,비고,DB파일명"
+                UserInfo(
+                    name = parts[4].trim(),           // 이름
+                    phoneNumber = parts[3].trim(),    // 연락처
+                    carNumber = parts[1].trim(),      // 차량번호
+                    registrationDate = parts[2].trim(), // 등록일자
+                    dbFileName = parts[6].trim()      // DB파일명 (user_%s.db)
+                )
+            } else {
+                println("[WARNING] 잘못된 사용자 데이터 형식: $userLine")
+                null
+            }
+        }
+    } catch (e: Exception) {
+        println("[ERROR] 사용자 데이터 로드 중 오류: ${e.message}")
+        e.printStackTrace()
+        emptyList()
+    }
+}
 
 @Composable
 fun UserInfoItem(userInfo: UserInfo, onClick: (UserInfo) -> Unit) {
-    Row (
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(2.dp)
+            .padding(4.dp)
             .background(Color.LightGray).alpha(0.9f)
             .clickable { onClick(userInfo) }
+            .padding(8.dp)
     ) {
-        Text(text = "Name: ${userInfo.name}", fontSize = 20.sp)
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(text = "Phone: ${userInfo.phoneNumber}", fontSize = 16.sp)
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(text = "Car Number: ${userInfo.carNumber}", fontSize = 16.sp)
+        // 첫 번째 줄: 이름과 등록일자
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = "이름: ${userInfo.name}", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            if (userInfo.registrationDate.isNotEmpty()) {
+                Text(text = "등록일자: ${userInfo.registrationDate}", fontSize = 14.sp, color = Color.DarkGray)
+            }
+        }
+
+        // 두 번째 줄: 차량번호
+        Text(text = "차량번호: ${userInfo.carNumber}", fontSize = 16.sp, color = Color.DarkGray)
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // 세 번째 줄: 연락처, DB 파일명
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = "연락처: ${userInfo.phoneNumber}", fontSize = 14.sp, color = Color.DarkGray)
+            if (userInfo.dbFileName.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "DB 파일: ${userInfo.dbFileName}",
+                    fontSize = 12.sp,
+                    color = Color.Blue,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                )
+            }
+        }
     }
 }
 @Composable
@@ -363,6 +434,66 @@ fun UserDialog(userInfo: UserInfo, onDismiss: () -> Unit) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(onClick = onDismiss) {
                     Text("Close")
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 파일 다시 읽기 확인 다이얼로그
+ * 
+ * 파일에서 사용자 데이터를 다시 읽어오기 전에 사용자에게 확인을 요청하는 다이얼로그입니다.
+ */
+@Composable
+fun ReloadConfirmDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = MaterialTheme.shapes.medium,
+            elevation = 8.dp,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp)
+            ) {
+                // 제목
+                Text(
+                    text = "파일 다시 읽기",
+                    style = MaterialTheme.typography.h6,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                
+                // 안내 메시지
+                Text(
+                    text = "파일에서 사용자 데이터를 다시 읽어옵니다.\n최신 파일 내용으로 목록이 업데이트됩니다.\n\n계속하시겠습니까?",
+                    style = MaterialTheme.typography.body1,
+                    color = Color.DarkGray,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+                
+                // 버튼들
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Button(
+                        onClick = onDismiss,
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray),
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Text("취소", color = Color.White)
+                    }
+                    
+                    Button(
+                        onClick = onConfirm,
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color.Blue)
+                    ) {
+                        Text("새로고침", color = Color.White)
+                    }
                 }
             }
         }
