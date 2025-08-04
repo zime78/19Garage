@@ -101,11 +101,9 @@ private fun VersionInfoSection() {
         )
         
         // 앱 버전
-        val appVersion = System.getenv("APP_VERSION") 
-            ?: ResourceLoader.getString("settings_unknown_version")
         InfoRow(
             label = ResourceLoader.getString("settings_app_version"),
-            value = appVersion
+            value = ResourceLoader.APP_VERSION
         )
         
         // 빌드 날짜 (현재 날짜로 표시)

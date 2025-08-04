@@ -189,7 +189,7 @@ fun HomeView() {
                     .height(40.dp),
                 contentAlignment = Alignment.CenterEnd  // 오른쪽 끝 정렬
             ) {
-                val versionName = System.getenv("APP_VERSION") ?: "Unknown"
+                val versionName = ResourceLoader.APP_VERSION
                 TooltipArea(
                     tooltip = {
                         Surface(
