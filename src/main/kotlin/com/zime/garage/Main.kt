@@ -49,7 +49,7 @@ enum class ButtonState {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 @Preview
-fun HomeView() {
+fun HomeView(onDataManagementClick: () -> Unit = {}) {
     var buttonState by remember { mutableStateOf(ButtonState.NONE) }
     var reloadTrigger by remember { mutableStateOf(0) } // 리스트 갱신 트리거
     var showReloadConfirmDialog by remember { mutableStateOf(false) } // 다시 읽기 확인 다이얼로그
@@ -83,9 +83,9 @@ fun HomeView() {
                 }
 
                 Button(onClick = {
-
+                    onDataManagementClick()
                 }) {
-                    Text("분류 수정")
+                    Text("데이터 관리")
                 }
 
 //section 1번째 뒤 (다시읽기, 설정)
@@ -593,6 +593,7 @@ fun main() = application {
 
 //    var action by remember { mutableStateOf("Last action: None") }
     var isOpen by remember { mutableStateOf(true) }
+    var showDataManagement by remember { mutableStateOf(false) }
 
     if (isOpen) {
 
@@ -613,7 +614,9 @@ fun main() = application {
             ) {
 
             // 메인 그리기
-            HomeView()
+            HomeView(
+                onDataManagementClick = { showDataManagement = true }
+            )
 
             // 메뉴바
             MenuBar {
@@ -627,6 +630,13 @@ fun main() = application {
                         onClick = { isOpen = false },
                         shortcut = KeyShortcut(Key.Escape),
                         mnemonic = 'E')
+                }
+
+                Menu("관리", mnemonic = 'M') {
+                    Item("데이터 관리",
+                        onClick = { showDataManagement = true },
+                        shortcut = KeyShortcut(Key.D, ctrl = true),
+                        mnemonic = 'D')
                 }
 
                 Menu("도움말", mnemonic = 'A') {
@@ -658,6 +668,26 @@ fun main() = application {
 //            ) {
 //                Text(text = action)
 //            }
+        }
+
+        // 데이터 관리 윈도우
+        if (showDataManagement) {
+            val dataManagementWidth = (screenSize.width * 0.7).toInt()
+            val dataManagementHeight = (screenSize.height * 0.8).toInt()
+            
+            Window(
+                title = "데이터 관리",
+                onCloseRequest = { showDataManagement = false },
+                state = WindowState(
+                    width = dataManagementWidth.dp,
+                    height = dataManagementHeight.dp,
+                    position = WindowPosition(Alignment.Center)
+                )
+            ) {
+                DataManagementWindow(
+                    onCloseRequest = { showDataManagement = false }
+                )
+            }
         }
     }
 }
