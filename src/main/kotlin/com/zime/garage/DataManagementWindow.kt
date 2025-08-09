@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import com.zime.garage.db.viewModel.*
+import com.zime.garage.viewmodel.ClassificationViewModel
 
 /**
  * 데이터 관리 윈도우
@@ -63,8 +64,7 @@ fun DataManagementWindow(
 
 @Composable
 fun ClassificationManagementTab() {
-    val classificationModel = remember { ClassificationModel() }
-    var classifications by remember { mutableStateOf(listOf<String>()) }
+    val viewModel = remember { ClassificationViewModel() }
     var newItemText by remember { mutableStateOf("") }
     var editingItem by remember { mutableStateOf<String?>(null) }
     var editText by remember { mutableStateOf("") }
@@ -75,7 +75,7 @@ fun ClassificationManagementTab() {
 
     // 데이터 로드
     LaunchedEffect(Unit) {
-        classifications = classificationModel.loadClassificationFile().map { it.type }
+        viewModel.load()
     }
 
     Column(
@@ -95,7 +95,7 @@ fun ClassificationManagementTab() {
             
             Button(
                 onClick = {
-                    classifications = classificationModel.loadClassificationFile().map { it.type }
+                    viewModel.refresh()
                 },
                 colors = ButtonDefaults.buttonColors(backgroundColor = Color.Blue)
             ) {
@@ -114,14 +114,14 @@ fun ClassificationManagementTab() {
             ) {
                 item {
                     Text(
-                        text = "분류 목록 (총 ${classifications.size}개)",
+                        text = "분류 목록 (총 ${viewModel.classifications.size}개)",
                         style = MaterialTheme.typography.h6,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                 }
                 
-                items(classifications) { classification ->
+                items(viewModel.classifications) { classification ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         elevation = 2.dp
@@ -191,9 +191,8 @@ fun ClassificationManagementTab() {
                 Button(
                     onClick = {
                         if (newItemText.isNotBlank()) {
-                            val success = classificationModel.addClassificationType(newItemText)
+                            val success = viewModel.add(newItemText)
                             if (success) {
-                                classifications = classificationModel.loadClassificationFile().map { it.type }
                                 newItemText = ""
                                 showAddDialog = false
                             }
@@ -237,9 +236,8 @@ fun ClassificationManagementTab() {
                 Button(
                     onClick = {
                         if (editText.isNotBlank() && editingItem != null) {
-                            val success = classificationModel.updateClassificationType(editingItem!!, editText)
+                            val success = viewModel.update(editingItem!!, editText)
                             if (success) {
-                                classifications = classificationModel.loadClassificationFile().map { it.type }
                                 editingItem = null
                                 editText = ""
                                 showEditDialog = false
@@ -274,9 +272,8 @@ fun ClassificationManagementTab() {
                 Button(
                     onClick = {
                         itemToDelete?.let { item ->
-                            val success = classificationModel.deleteClassificationType(item)
+                            val success = viewModel.delete(item)
                             if (success) {
-                                classifications = classificationModel.loadClassificationFile().map { it.type }
                                 itemToDelete = null
                                 showDeleteDialog = false
                             }

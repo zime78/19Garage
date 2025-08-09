@@ -25,7 +25,7 @@ GitHub : https://github.com/zime78/19Garage  <br>
 <h1>참고 자료</h1>
 <h3>빌드 방법</h3>
 
-어플리케이션을 JVM 패키지로 빌드하려면:
+어플리케이션을 JVM 패키지로 빌드하려면:********
 ```kotlin
 ./gradlew package
 ```

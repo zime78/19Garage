@@ -30,6 +30,10 @@ dependencies {
     implementation(compose.material3)
     implementation(compose.materialIconsExtended)
     implementation(kotlin("stdlib"))
+
+    // 테스트 의존성
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 compose.desktop {
     application {
@@ -60,4 +64,8 @@ compose.desktop {
 
 tasks.withType<JavaExec> {
     environment("APP_VERSION", project.version)  // 환경 변수로 버전 전달
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
