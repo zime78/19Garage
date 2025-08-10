@@ -723,6 +723,73 @@ object LocalFileManager {
     }
 
     /**
+     * 주어진 인덱스(0-based)의 작업 기록을 업데이트합니다. 금액은 수량*단가로 재계산합니다.
+     */
+    fun updateUserRecordAt(
+        carNumber: String,
+        index: Int,
+        date: String,
+        vehicleNumber: String,
+        model: String,
+        vehicleFormat: String,
+        engine: String,
+        manufactureYear: String,
+        mileage: String,
+        category1: String,
+        category2: String,
+        category3: String,
+        item: String,
+        quantity: String,
+        unitPrice: String,
+        name: String,
+        contact: String,
+        remarks: String
+    ): Boolean {
+        val file = ensureUserRecordDbWithHeader(carNumber)
+        return try {
+            val text = file.readText().trim()
+            if (text.isBlank()) return false
+            val arr = Json.parseToJsonElement(text).jsonArray.toMutableList()
+            if (index !in 0 until arr.size) return false
+
+            val amount = try {
+                val q = quantity.trim().toDouble()
+                val u = unitPrice.trim().toDouble()
+                (q * u).toLong().toString()
+            } catch (e: Exception) { "" }
+
+            val obj = buildJsonObject {
+                put("no", (index + 1).toString())
+                put("date", date)
+                put("vehicleNumber", vehicleNumber)
+                put("model", model)
+                put("vehicleFormat", vehicleFormat)
+                put("engine", engine)
+                put("manufactureYear", manufactureYear)
+                put("mileage", mileage)
+                put("category1", category1)
+                put("category2", category2)
+                put("category3", category3)
+                put("item", item)
+                put("quantity", quantity)
+                put("unitPrice", unitPrice)
+                put("amount", amount)
+                put("name", name)
+                put("contact", contact)
+                put("remarks", remarks)
+            }
+            arr[index] = obj
+            val newArr = JsonArray(arr)
+            file.writeText(Json.encodeToString(JsonElement.serializer(), newArr))
+            true
+        } catch (e: Exception) {
+            println("[ERROR] 사용자 기록 업데이트 중 오류: ${e.message}")
+            e.printStackTrace()
+            false
+        }
+    }
+
+    /**
      * 주어진 No(1-based)에 해당하는 작업 기록을 삭제합니다.
      */
     fun deleteUserRecordByNo(carNumber: String, no: Int): Boolean {
