@@ -677,6 +677,88 @@ object LocalFileManager {
         }
     }
 
+    // 삭제 및 재정렬 유틸리티 추가
+    /**
+     * 주어진 인덱스(0-based)의 작업 기록을 삭제하고 No를 1부터 재정렬합니다.
+     */
+    fun deleteUserRecordAt(carNumber: String, index: Int): Boolean {
+        val file = ensureUserRecordDbWithHeader(carNumber)
+        return try {
+            val text = file.readText().trim()
+            if (text.isBlank()) return false
+            val arr = Json.parseToJsonElement(text).jsonArray.toMutableList()
+            if (index !in 0 until arr.size) return false
+            arr.removeAt(index)
+            // 재정렬: no를 1부터 다시 매깁니다.
+            val renumbered = JsonArray(arr.mapIndexed { i, el ->
+                val obj = el.jsonObject
+                buildJsonObject {
+                    put("no", (i + 1).toString())
+                    put("date", obj["date"] ?: JsonPrimitive(""))
+                    put("vehicleNumber", obj["vehicleNumber"] ?: JsonPrimitive(""))
+                    put("model", obj["model"] ?: JsonPrimitive(""))
+                    put("vehicleFormat", obj["vehicleFormat"] ?: JsonPrimitive(""))
+                    put("engine", obj["engine"] ?: JsonPrimitive(""))
+                    put("manufactureYear", obj["manufactureYear"] ?: JsonPrimitive(""))
+                    put("mileage", obj["mileage"] ?: JsonPrimitive(""))
+                    put("category1", obj["category1"] ?: JsonPrimitive(""))
+                    put("category2", obj["category2"] ?: JsonPrimitive(""))
+                    put("category3", obj["category3"] ?: JsonPrimitive(""))
+                    put("item", obj["item"] ?: JsonPrimitive(""))
+                    put("quantity", obj["quantity"] ?: JsonPrimitive(""))
+                    put("unitPrice", obj["unitPrice"] ?: JsonPrimitive(""))
+                    put("amount", obj["amount"] ?: JsonPrimitive(""))
+                    put("name", obj["name"] ?: JsonPrimitive(""))
+                    put("contact", obj["contact"] ?: JsonPrimitive(""))
+                    put("remarks", obj["remarks"] ?: JsonPrimitive(""))
+                }
+            })
+            file.writeText(Json.encodeToString(JsonElement.serializer(), renumbered))
+            true
+        } catch (e: Exception) {
+            println("[ERROR] 사용자 기록 삭제 중 오류: ${e.message}")
+            e.printStackTrace()
+            false
+        }
+    }
+
+    /**
+     * 주어진 No(1-based)에 해당하는 작업 기록을 삭제합니다.
+     */
+    fun deleteUserRecordByNo(carNumber: String, no: Int): Boolean {
+        val file = ensureUserRecordDbWithHeader(carNumber)
+        return try {
+            val text = file.readText().trim()
+            if (text.isBlank()) return false
+            val arr = Json.parseToJsonElement(text).jsonArray
+            val idx = arr.indexOfFirst { el ->
+                el.jsonObject["no"]?.jsonPrimitive?.content == no.toString()
+            }
+            if (idx < 0) return false
+            deleteUserRecordAt(carNumber, idx)
+        } catch (e: Exception) {
+            println("[ERROR] 사용자 기록(No=$no) 삭제 중 오류: ${e.message}")
+            e.printStackTrace()
+            false
+        }
+    }
+
+    /**
+     * 지정한 차량의 모든 작업 기록을 삭제(초기화)합니다.
+     * JSON 파일을 빈 배열로 덮어씁니다.
+     */
+    fun clearUserRecords(carNumber: String): Boolean {
+        val file = ensureUserRecordDbWithHeader(carNumber)
+        return try {
+            file.writeText("[]")
+            true
+        } catch (e: Exception) {
+            println("[ERROR] 사용자 기록 전체 삭제 중 오류: ${e.message}")
+            e.printStackTrace()
+            false
+        }
+    }
+
     // === 사용자 데이터 삭제 기능 섹션 ===
 
     /**
