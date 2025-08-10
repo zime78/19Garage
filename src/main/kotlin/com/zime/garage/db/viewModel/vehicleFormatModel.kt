@@ -25,7 +25,38 @@ class VehicleFormatModel: BaseModel() {
     fun setDefaultVehicleFormatFile() {
         val file = openFile(FileType.VEHICLE_FORMAT)
         file?.let {
-            val defaultTypes = listOf("유럽형", "북미형", "유럽형 브라부스", "북미형 브라부스")
+            val defaultTypes = listOf(
+                "북미형",
+                "북미형 브라부스",
+                "북미형 카브리오",
+                "북미형 쿠페",
+                "유럽형",
+                "유럽형 로드스터(브라부스)",
+                "유럽형 브라부스",
+                "유럽형 브라부스(수동)",
+                "유럽형 카브리오",
+                "유럽형 카브리오 MHD",
+                "유럽형 카브리오 MHD(전기형)",
+                "유럽형 카브리오 브라부스",
+                "유럽형 카브리오(논터보)",
+                "유럽형 카브리오(브라부스)",
+                "유럽형 쿠페",
+                "유럽형 쿠페 MHD",
+                "유럽형 쿠페(NA)",
+                "유럽형 쿠페(브라부스)",
+                "일본형 카브리오",
+                "일본형 쿠페",
+                "MHD 카브리오",
+                "MHD 쿠페",
+                "로드스터",
+                "로드스터 브라부스",
+                "로드스터 브라부스 쿠페",
+                "로드스터 쿠페",
+                "브라부스 쿱",
+                "우핸들",
+                "카브리오",
+                "쿠페"
+            )
 
             try {
                 if (file.exists()) {
