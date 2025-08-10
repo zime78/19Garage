@@ -65,6 +65,12 @@ object LocalFileManager {
     private val fileUserData = getDatabasePath("db/user/user_%s.db", true)
     private val fileUserList = getDatabasePath("db/user_list.txt", true)
 
+    /** 개별 차량 작업 기록 파일 경로 (%s.json) - 차량번호를 파일명으로 사용 */
+    private val fileUserRecord = getDatabasePath("db/userDB/%s.json", true)
+
+    /** 작업 기록 CSV 헤더 (요구된 한글 컬럼명) */
+    val USER_RECORD_HEADER: String = "No,날짜,차량번호,모델,국가형식,엔진,연식,주행거리,분류1,분류2,분류3,품목,수량,단가,금액,이름,연락처,비고"
+
     // === 데이터베이스 모델 인스턴스 ===
     /** 차량 모델 데이터베이스 모델 */
     private var dbVehicleModelModel: VehicleModelModel
@@ -476,6 +482,198 @@ object LocalFileManager {
             println("JSON 파일 업데이트 완료: ${file.readText()}")
         } catch (e: Exception) {
             println("LocalFileManager JSON 로드 오류: $e")
+        }
+    }
+
+    // === 차량별 작업 기록 유틸 섹션 ===
+    /** 차량별 작업 기록 파일 객체 반환 (carNumber.json) */
+    fun getUserRecordFile(carNumber: String): java.io.File = java.io.File(fileUserRecord.format(carNumber))
+
+    /**
+     * 차량별 작업 기록 JSON 파일을 보장하고, 레거시 CSV(.db)가 있으면 JSON으로 마이그레이션합니다.
+     * - 파일이 없으면 생성 후 []로 초기화
+     * - 비정상 내용이면 []로 초기화
+     * - 레거시 .db가 있으면 CSV를 파싱해 JSON 배열로 저장한 후 .db 삭제
+     */
+    fun ensureUserRecordDbWithHeader(carNumber: String): java.io.File {
+        // JSON 포맷 보장 및 레거시 CSV(.db) → JSON 마이그레이션 수행
+        val jsonFile = getUserRecordFile(carNumber)
+        Util.isDirectoryExists(jsonFile.path)
+        val legacyFile = File(getDatabasePath("db/userDB/%s.db", true).format(carNumber))
+        try {
+            if (legacyFile.exists()) {
+                // 레거시 CSV 파일을 JSON 배열로 변환
+                val lines = legacyFile.readLines().filter { it.isNotBlank() }
+                val dataLines = if (lines.isNotEmpty() && lines.first().startsWith("No,")) lines.drop(1) else lines
+                val jsonObjects = dataLines.map { line ->
+                    val cols = line.split(",")
+                    val padded = cols + List(maxOf(0, 18 - cols.size)) { "" }
+                    buildJsonObject {
+                        put("no", padded[0])
+                        put("date", padded[1])
+                        put("vehicleNumber", padded[2])
+                        put("model", padded[3])
+                        put("vehicleFormat", padded[4])
+                        put("engine", padded[5])
+                        put("manufactureYear", padded[6])
+                        put("mileage", padded[7])
+                        put("category1", padded[8])
+                        put("category2", padded[9])
+                        put("category3", padded[10])
+                        put("item", padded[11])
+                        put("quantity", padded[12])
+                        put("unitPrice", padded[13])
+                        put("amount", padded[14])
+                        put("name", padded[15])
+                        put("contact", padded[16])
+                        put("remarks", padded[17])
+                    }
+                }
+                val arr = JsonArray(jsonObjects)
+                jsonFile.writeText(Json.encodeToString(JsonElement.serializer(), arr))
+                // 마이그레이션 완료 후 레거시 파일 삭제
+                legacyFile.delete()
+            } else {
+                if (!jsonFile.exists()) {
+                    jsonFile.createNewFile()
+                }
+                if (jsonFile.length() == 0L) {
+                    // 빈 파일이면 빈 JSON 배열로 초기화
+                    jsonFile.writeText("[]")
+                } else {
+                    val txt = jsonFile.readText().trim()
+                    if (!txt.startsWith("[") && !txt.startsWith("{")) {
+                        // JSON 포맷이 아니면 초기화
+                        jsonFile.writeText("[]")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("[ERROR] JSON 기록 파일 보장 중 오류: ${e.message}")
+            e.printStackTrace()
+            if (!jsonFile.exists()) {
+                jsonFile.createNewFile()
+            }
+            jsonFile.writeText("[]")
+        }
+        return jsonFile
+    }
+
+    /** 차량별 작업 기록(JSON 배열)을 로드하여 UI에서 사용하는 18열 문자열 리스트로 변환합니다. */
+    fun loadUserRecordLines(carNumber: String): List<List<String>> {
+        val file = ensureUserRecordDbWithHeader(carNumber)
+        return try {
+            val text = file.readText().trim()
+            if (text.isBlank()) return emptyList()
+            val element = Json.parseToJsonElement(text)
+            val arr = element.jsonArray
+            arr.map { el ->
+                val obj = el.jsonObject
+                listOf(
+                    obj["no"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["date"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["vehicleNumber"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["model"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["vehicleFormat"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["engine"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["manufactureYear"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["mileage"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["category1"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["category2"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["category3"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["item"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["quantity"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["unitPrice"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["amount"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["name"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["contact"]?.jsonPrimitive?.contentOrNull ?: "",
+                    obj["remarks"]?.jsonPrimitive?.contentOrNull ?: "",
+                )
+            }
+        } catch (e: Exception) {
+            // 예외 시 레거시 CSV 포맷 Fallback 처리
+            return try {
+                val lines = file.readLines()
+                if (lines.isEmpty()) return emptyList()
+                val dataLines = if (lines.first().startsWith("No,")) lines.drop(1) else lines
+                dataLines.filter { it.isNotBlank() }.map { line ->
+                    val cols = line.split(",")
+                    cols + List(maxOf(0, 18 - cols.size)) { "" }
+                }
+            } catch (e2: Exception) {
+                println("[ERROR] 사용자 기록 로드 실패: ${e.message}, fallback 실패: ${e2.message}")
+                emptyList()
+            }
+        }
+    }
+
+    /**
+     * 차량별 작업 기록 파일에 레코드 1건을 추가합니다.
+     * amount(금액)는 단가*수량으로 계산(실패 시 공란)
+     */
+    fun addUserRecordLine(
+        carNumber: String,
+        date: String,
+        vehicleNumber: String,
+        model: String,
+        vehicleFormat: String,
+        engine: String,
+        manufactureYear: String,
+        mileage: String,
+        category1: String,
+        category2: String,
+        category3: String,
+        item: String,
+        quantity: String,
+        unitPrice: String,
+        name: String,
+        contact: String,
+        remarks: String
+    ): Boolean {
+        val file = ensureUserRecordDbWithHeader(carNumber)
+        return try {
+            val text = file.readText().trim()
+            val currentArray: MutableList<JsonElement> = if (text.isNotBlank()) {
+                Json.parseToJsonElement(text).jsonArray.toMutableList()
+            } else {
+                mutableListOf()
+            }
+            val nextNo = (currentArray.size + 1).toString()
+            // 금액 계산
+            val amount = try {
+                val q = quantity.trim().toDouble()
+                val u = unitPrice.trim().toDouble()
+                (q * u).toLong().toString()
+            } catch (e: Exception) { "" }
+
+            val obj = buildJsonObject {
+                put("no", nextNo)
+                put("date", date)
+                put("vehicleNumber", vehicleNumber)
+                put("model", model)
+                put("vehicleFormat", vehicleFormat)
+                put("engine", engine)
+                put("manufactureYear", manufactureYear)
+                put("mileage", mileage)
+                put("category1", category1)
+                put("category2", category2)
+                put("category3", category3)
+                put("item", item)
+                put("quantity", quantity)
+                put("unitPrice", unitPrice)
+                put("amount", amount)
+                put("name", name)
+                put("contact", contact)
+                put("remarks", remarks)
+            }
+            currentArray.add(obj)
+            val newArr = JsonArray(currentArray)
+            file.writeText(Json.encodeToString(JsonElement.serializer(), newArr))
+            true
+        } catch (e: Exception) {
+            println("[ERROR] 사용자 기록 추가 중 오류: ${e.message}")
+            e.printStackTrace()
+            false
         }
     }
 

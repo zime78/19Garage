@@ -338,7 +338,7 @@ fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0
     }
 
     selectedUser?.let {
-        UserDialog(userInfo = it, onDismiss = { selectedUser = null })
+        UserRecordWindow(userInfo = it, onClose = { selectedUser = null })
     }
 }
 
@@ -678,7 +678,7 @@ fun main() = application {
             Window(
                 title = "데이터 관리",
                 onCloseRequest = { showDataManagement = false },
-                alwaysOnTop = true, //최 상위로
+                alwaysOnTop = true, //최상위로
                 state = WindowState(
                     width = dataManagementWidth.dp,
                     height = dataManagementHeight.dp,
