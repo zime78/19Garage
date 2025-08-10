@@ -33,10 +33,13 @@ fun UserRecordWindow(userInfo: UserInfo, onClose: () -> Unit) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var deleteIndex by remember { mutableStateOf<Int?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
+    // 정렬 옵션 상태 및 목록
+    var sortOption by remember { mutableStateOf("날짜 내림") }
+    val sortOptions = remember { listOf("No 오름", "No 내림", "날짜 오름", "날짜 내림") }
 
     LaunchedEffect(userInfo.carNumber) {
         LocalFileManager.ensureUserRecordDbWithHeader(userInfo.carNumber)
-        records = LocalFileManager.loadUserRecordLines(userInfo.carNumber)
+        records = applySort(LocalFileManager.loadUserRecordLines(userInfo.carNumber), sortOption)
     }
 
     val screenSize = Toolkit.getDefaultToolkit().screenSize
@@ -72,7 +75,15 @@ fun UserRecordWindow(userInfo: UserInfo, onClose: () -> Unit) {
                             Text("${userInfo.carNumber}.json", fontSize = 14.sp, color = Color.Blue)
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        SortOptionDropdown(
+                            selected = sortOption,
+                            options = sortOptions,
+                            onSelect = { sel ->
+                                sortOption = sel
+                                records = applySort(records, sortOption)
+                            }
+                        )
                         Button(onClick = {
                             showAddDialog = true
                         }) {
@@ -153,9 +164,11 @@ fun UserRecordWindow(userInfo: UserInfo, onClose: () -> Unit) {
                     onConfirm = {
                         val idx = deleteIndex
                         if (idx != null) {
-                            val ok = LocalFileManager.deleteUserRecordAt(userInfo.carNumber, idx)
+                            val no = records.getOrNull(idx)?.getOrNull(0)?.toIntOrNull()
+                            val targetIndex = if (no != null && no > 0) no - 1 else idx
+                            val ok = LocalFileManager.deleteUserRecordAt(userInfo.carNumber, targetIndex)
                             if (ok) {
-                                records = LocalFileManager.loadUserRecordLines(userInfo.carNumber)
+                                records = applySort(LocalFileManager.loadUserRecordLines(userInfo.carNumber), sortOption)
                             }
                         }
                         showDeleteConfirm = false
@@ -174,7 +187,7 @@ fun UserRecordWindow(userInfo: UserInfo, onClose: () -> Unit) {
                     onConfirm = {
                         val ok = LocalFileManager.clearUserRecords(userInfo.carNumber)
                         if (ok) {
-                            records = LocalFileManager.loadUserRecordLines(userInfo.carNumber)
+                            records = applySort(LocalFileManager.loadUserRecordLines(userInfo.carNumber), sortOption)
                         }
                         showDeleteAllConfirm = false
                     }
@@ -186,7 +199,7 @@ fun UserRecordWindow(userInfo: UserInfo, onClose: () -> Unit) {
                     visible = showAddDialog,
                     onDismiss = { showAddDialog = false },
                     onAdded = {
-                        records = LocalFileManager.loadUserRecordLines(userInfo.carNumber)
+                        records = applySort(LocalFileManager.loadUserRecordLines(userInfo.carNumber), sortOption)
                         showAddDialog = false
                     }
                 )
@@ -503,3 +516,91 @@ private fun DropdownTextField(
     }
 }
 
+
+
+// 날짜(yyyy-MM-dd) 기준 오름차순 정렬: 잘못된/빈 날짜는 끝으로 이동
+private fun sortUserRecordsByDateDesc(records: List<List<String>>): List<List<String>> {
+    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.KOREA)
+    return try {
+        records.sortedWith(
+            compareBy<List<String>> { row ->
+                try {
+                    val dateStr = row.getOrNull(1) ?: ""
+                    sdf.parse(dateStr)?.time ?: Long.MAX_VALUE
+                } catch (e: Exception) {
+                    Long.MAX_VALUE
+                }
+            }.thenBy { row ->
+                // 같은 날짜일 때 기존 No가 작은 항목(먼저 추가)이 먼저 오도록 보조키
+                row.getOrNull(0)?.toIntOrNull() ?: Int.MAX_VALUE
+            }
+        )
+    } catch (e: Exception) {
+        records
+    }
+}
+
+
+// === 정렬 옵션 드롭다운 ===
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun SortOptionDropdown(
+    selected: String,
+    options: List<String>,
+    onSelect: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
+        TextField(
+            value = selected,
+            onValueChange = { /* 읽기 전용 */ },
+            label = { Text("정렬") },
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            singleLine = true
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            options.forEach { opt ->
+                DropdownMenuItem(onClick = {
+                    onSelect(opt)
+                    expanded = false
+                }) { Text(opt) }
+            }
+        }
+    }
+}
+
+// === 정렬 헬퍼 ===
+private enum class SortKey { NO, DATE }
+private enum class SortOrder { ASC, DESC }
+
+private fun applySort(records: List<List<String>>, option: String): List<List<String>> {
+    val (key, order) = when (option) {
+        "No 오름" -> SortKey.NO to SortOrder.ASC
+        "No 내림" -> SortKey.NO to SortOrder.DESC
+        "날짜 오름" -> SortKey.DATE to SortOrder.ASC
+        else -> SortKey.DATE to SortOrder.DESC
+    }
+    return sortUserRecords(records, key, order)
+}
+
+private fun sortUserRecords(records: List<List<String>>, key: SortKey, order: SortOrder): List<List<String>> {
+    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.KOREA)
+    val base = when (key) {
+        SortKey.NO -> compareBy<List<String>> { it.getOrNull(0)?.toIntOrNull() ?: Int.MAX_VALUE }
+        SortKey.DATE -> compareBy<List<String>> {
+            try {
+                val s = it.getOrNull(1) ?: ""
+                sdf.parse(s)?.time ?: Long.MAX_VALUE
+            } catch (_: Exception) { Long.MAX_VALUE }
+        }
+    }.thenBy { it.getOrNull(0)?.toIntOrNull() ?: Int.MAX_VALUE }
+    val cmp = if (order == SortOrder.DESC) base.reversed() else base
+    return try { records.sortedWith(cmp) } catch (_: Exception) { records }
+}
