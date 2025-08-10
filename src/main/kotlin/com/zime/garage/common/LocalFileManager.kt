@@ -98,6 +98,8 @@ object LocalFileManager {
     init {
         // 데이터베이스 디렉토리 존재 확인
         Util.isDirectoryExists(getDatabasePath("db/sample.db", true))
+        // 사용자 DB 디렉토리 존재 확인
+        Util.isDirectoryExists(getDatabasePath("db/userDB/sample.db", true))
 
         // 데이터베이스 모델 인스턴스 초기화
         dbVehicleModelModel = VehicleModelModel()
