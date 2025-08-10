@@ -678,6 +678,7 @@ fun main() = application {
             Window(
                 title = "데이터 관리",
                 onCloseRequest = { showDataManagement = false },
+                alwaysOnTop = true, //최 상위로
                 state = WindowState(
                     width = dataManagementWidth.dp,
                     height = dataManagementHeight.dp,
