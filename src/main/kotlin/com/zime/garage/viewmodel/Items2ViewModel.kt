@@ -2,14 +2,14 @@ package com.zime.garage.viewmodel
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import com.zime.garage.db.viewModel.ClassificationModel
+import com.zime.garage.db.viewModel.Items2Model
 
 /**
- * MVVM ViewModel for Classification management.
- * Wraps ClassificationModel (data layer) and exposes Compose-friendly state.
+ * MVVM ViewModel for Items2 management.
+ * Wraps Items2Model (data layer) and exposes Compose-friendly state.
  */
-class ClassificationViewModel : BaseViewModel {
-    private val model = ClassificationModel()
+class Items2ViewModel : BaseViewModel {
+    private val model = Items2Model()
 
     // Observable state for UI
     val classifications: SnapshotStateList<String> = mutableStateListOf()

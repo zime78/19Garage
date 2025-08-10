@@ -1,12 +1,12 @@
 package com.zime.garage.viewmodel
 
 import com.zime.garage.common.LocalFileManager
-import com.zime.garage.db.viewModel.ClassificationModel
+import com.zime.garage.db.viewModel.Items2Model
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.*
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ClassificationViewModelTest {
+class Items2wModelTest {
 
     private val tmp1 = "_test_"
     private val tmp2 = "_test_updated_"
@@ -20,7 +20,7 @@ class ClassificationViewModelTest {
     @BeforeEach
     fun cleanBefore() {
         // Ensure a clean slate for test names
-        val model = ClassificationModel()
+        val model = Items2Model()
         model.deleteClassificationType(tmp1)
         model.deleteClassificationType(tmp2)
     }
@@ -28,14 +28,14 @@ class ClassificationViewModelTest {
     @AfterEach
     fun cleanAfter() {
         // Cleanup any leftovers
-        val model = ClassificationModel()
+        val model = Items2Model()
         model.deleteClassificationType(tmp1)
         model.deleteClassificationType(tmp2)
     }
 
     @Test
     fun addUpdateDeleteFlow() {
-        val vm = ClassificationViewModel()
+        val vm = Items2ViewModel()
         vm.load()
         val originalCount = vm.classifications.size
 

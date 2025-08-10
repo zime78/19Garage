@@ -1,8 +1,7 @@
 package com.zime.garage
 
-import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
@@ -12,9 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.*
 import com.zime.garage.db.viewModel.*
-import com.zime.garage.viewmodel.ClassificationViewModel
+import com.zime.garage.viewmodel.Items2ViewModel
+import com.zime.garage.viewmodel.Items3ViewModel
 
 /**
  * 데이터 관리 윈도우
@@ -53,17 +52,18 @@ fun DataManagementWindow(
             1 -> VehicleFormatManagementTab()
             2 -> EngineManagementTab()
             3 -> ImprovementManagementTab()
-            4 -> ItemsManagementTab(category = "분류1")
-            5 -> ClassificationManagementTab(category = "분류2")
-            6 -> ClassificationManagementTab(category = "분류3")
+            4 -> ItemsManagement1Tab(category = "분류1")
+            5 -> ItemsManagement2Tab(category = "분류2")
+            6 -> ItemsManagement3Tab(category = "분류3")
         }
     }
 }
 
 
 
+// 분류1
 @Composable
-fun ItemsManagementTab(category: String = "분류1") {
+fun ItemsManagement1Tab(category: String = "분류1") {
     val itemsModel = remember { ItemsModel() }
     var items by remember { mutableStateOf(listOf<String>()) }
     var newItemText by remember { mutableStateOf("") }
@@ -258,8 +258,199 @@ fun ItemsManagementTab(category: String = "분류1") {
 }
 
 @Composable
-fun ClassificationManagementTab(category: String = "분류") {
-    val viewModel = remember { ClassificationViewModel() }
+fun ItemsManagement2Tab(category: String = "분류") {
+    val viewModel = remember { Items2ViewModel() }
+    var newItemText by remember { mutableStateOf("") }
+    var editingItem by remember { mutableStateOf<String?>(null) }
+    var editText by remember { mutableStateOf("") }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var itemToDelete by remember { mutableStateOf<String?>(null) }
+
+    // 데이터 로드
+    LaunchedEffect(Unit) {
+        viewModel.load()
+    }
+
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp)
+    ) {
+        // 상단 버튼들
+        TopActionsRow(
+            onAdd = { showAddDialog = true },
+            onRefresh = {
+                viewModel.refresh()
+            }
+        )
+
+        // 분류 목록
+        Card(
+            modifier = Modifier.fillMaxSize(),
+            elevation = 4.dp
+        ) {
+            LazyColumn(
+                modifier = Modifier.padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                item {
+                    SectionTitle(text = "$category 목록(총 ${viewModel.classifications.size}개)")
+                }
+
+                items(viewModel.classifications) { classification ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = 2.dp
+                    ) {
+                        ItemRow(
+                            text = classification,
+                            onEdit = {
+                                editingItem = classification
+                                editText = classification
+                                showEditDialog = true
+                            },
+                            onDelete = {
+                                itemToDelete = classification
+                                showDeleteDialog = true
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // 추가 다이얼로그
+    if (showAddDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddDialog = false },
+            title = { Text("추가") },
+            text = {
+                Column {
+                    Text("새로운 $category 항목을 입력하세요:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = newItemText,
+                        onValueChange = { newItemText = it },
+                        label = { Text("추가할 $category 을 입력해주세요.") },
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newItemText.isNotBlank()) {
+                            val success = viewModel.add(newItemText)
+                            if (success) {
+                                newItemText = ""
+                                showAddDialog = false
+                            }
+                        }
+                    }
+                ) {
+                    Text("추가")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = {
+                        newItemText = ""
+                        showAddDialog = false
+                    }
+                ) {
+                    Text("취소")
+                }
+            }
+        )
+    }
+
+    // 수정 다이얼로그
+    if (showEditDialog && editingItem != null) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("수정") },
+            text = {
+                Column {
+                    Text("$category 항목을 수정하세요:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = editText,
+                        onValueChange = { editText = it },
+                        label = { Text(category) },
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (editText.isNotBlank() && editingItem != null) {
+                            val success = viewModel.update(editingItem!!, editText)
+                            if (success) {
+                                editingItem = null
+                                editText = ""
+                                showEditDialog = false
+                            }
+                        }
+                    }
+                ) {
+                    Text("수정")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = {
+                        editingItem = null
+                        editText = ""
+                        showEditDialog = false
+                    }
+                ) {
+                    Text("취소")
+                }
+            }
+        )
+    }
+
+    // 삭제 확인 다이얼로그
+    if (showDeleteDialog && itemToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("$category 삭제") },
+            text = { Text("'${itemToDelete}'을(를) 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        itemToDelete?.let { item ->
+                            val success = viewModel.delete(item)
+                            if (success) {
+                                itemToDelete = null
+                                showDeleteDialog = false
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(backgroundColor = Color.Red)
+                ) {
+                    Text("삭제", color = Color.White)
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = {
+                        itemToDelete = null
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("취소")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun ItemsManagement3Tab(category: String = "분류") {
+    val viewModel = remember { Items3ViewModel() }
     var newItemText by remember { mutableStateOf("") }
     var editingItem by remember { mutableStateOf<String?>(null) }
     var editText by remember { mutableStateOf("") }

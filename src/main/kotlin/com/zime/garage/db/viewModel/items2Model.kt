@@ -18,15 +18,15 @@ import kotlinx.serialization.json.*
  *
  */
 
-class ClassificationModel(): BaseModel() {
+class Items2Model(): BaseModel() {
 
     /**
      * 기본 분류 파일 설정
      * 파일이 존재하지 않을 경우 기본 분류 항목들로 새 파일을 생성합니다.
      * 파일이 이미 존재할 경우 누락된 기본 항목들을 추가합니다.
      */
-    fun setDefaultClassificationFile() {
-        val file = openFile(FileType.CLASSIFICATION)
+    fun setDefaultItemsFile() {
+        val file = openFile(FileType.ITEMS2)
         file?.let {
             val defaultTypes = listOf(
                 "내장", "외장", "기타", "하드웨어", "소프트웨어", "엔진", "엔진오일", "미션오일", "오일류",
@@ -80,7 +80,7 @@ class ClassificationModel(): BaseModel() {
      * @return 저장 성공 여부
      */
     fun saveClassificationFile(types: List<String>): Boolean {
-        val file = openFile(FileType.CLASSIFICATION)
+        val file = openFile(FileType.ITEMS2)
         return file?.let {
             try {
                 // 중복 제거 및 정렬
@@ -217,7 +217,7 @@ class ClassificationModel(): BaseModel() {
      * @return ClassificationType 리스트
      */
     fun loadClassificationFile(): List<ClassificationType> {
-        val file = openFile(FileType.CLASSIFICATION) // 적절한 파일 열기 함수 호출
+        val file = openFile(FileType.ITEMS2) // 적절한 파일 열기 함수 호출
         return file?.let {
             try {
                 if (!file.exists()) {

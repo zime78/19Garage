@@ -1,40 +1,27 @@
 package com.zime.garage
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.rememberWindowState
+import com.zime.garage.common.Material3DatePicker
 import com.zime.garage.db.type.UserAddType
-import com.zime.garage.db.viewModel.ClassificationModel
 import com.zime.garage.db.viewModel.UserAddModel
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.Alignment
-import com.zime.garage.common.Material3DatePicker
-import androidx.compose.material.Card
-import androidx.compose.material.Divider
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 
 /**
  * ViewUserAdd 내용만 포함한 컴포저블 - Preview용
@@ -451,7 +438,7 @@ fun ViewUserAdd(onCloseCallback: () -> Unit) {
     val remarks = remember { mutableStateOf("") }
 
     //model
-    val classificationModel = ClassificationModel()
+//    val classificationModel = Items2Model()
     val userAddModel = UserAddModel()
 //    val classificationItems = classificationModel.loadClassificationFile()
 //    val selectedCategory = remember { mutableStateOf("") }

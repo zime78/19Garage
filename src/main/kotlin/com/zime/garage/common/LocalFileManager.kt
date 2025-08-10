@@ -37,9 +37,10 @@ object LocalFileManager {
         /** 개선사항 파일 */
         IMPROVEMENT,
         /** 분류 파일 */
-        CLASSIFICATION,
+        ITEMS2,
         /** 아이템 파일 */
         ITEMS,
+        ITEMS3,
         /** 사용자 데이터 파일 */
         USER_DATA, // 사용자 데이터 파일 (user_%s.db)
         USER_LIST // 사용자 리스트 파일 (user_list.txt)
@@ -55,9 +56,10 @@ object LocalFileManager {
     /** 개선사항 데이터 파일 경로 */
     private val fileImprovement = getDatabasePath("db/improvement.txt", true)
     /** 분류 데이터 파일 경로 */
-    private val fileClassification = getDatabasePath("db/classification.txt", true)
+    private val fileItems2 = getDatabasePath("db/items2.txt", true)
     /** 아이템 데이터 파일 경로 */
     private val fileItems = getDatabasePath("db/items.txt", true)
+    private val fileItems3 = getDatabasePath("db/items3.txt", true)
 
     /** 사용자 데이터 파일 경로 (user_%s.db), 사용자 리스트 파일 경로 */
     private val fileUserData = getDatabasePath("db/user/user_%s.db", true)
@@ -73,9 +75,10 @@ object LocalFileManager {
     /** 개선사항 데이터베이스 모델 */
     private var dbImprovementModel: ImprovementModel
     /** 분류 데이터베이스 모델 */
-    private var dbClassificationModel: ClassificationModel
+    private var dbItems2Model: Items2Model
     /** 아이템 데이터베이스 모델 */
     private var dbItemsModel: ItemsModel
+    private var dbItems3Model: Items3Model
 
     /** 사용자 데이터베이스 모델 (사용자 차량번호에 따라 다름) */
     private var dbUserModel: UserModel
@@ -101,8 +104,9 @@ object LocalFileManager {
         dbVehicleFormatModel = VehicleFormatModel()
         dbEngineModel = EngineModel()
         dbImprovementModel = ImprovementModel()
-        dbClassificationModel = ClassificationModel()
+        dbItems2Model = Items2Model()
         dbItemsModel = ItemsModel()
+        dbItems3Model = Items3Model()
         dbUserModel = UserModel()
     }
 
@@ -119,8 +123,9 @@ object LocalFileManager {
             dbVehicleFormatModel.setDefaultVehicleFormatFile()
             dbEngineModel.setDefaultEngineFile()
             dbImprovementModel.setDefaultImprovementFile()
-            dbClassificationModel.setDefaultClassificationFile()
+            dbItems2Model.setDefaultItemsFile()
             dbItemsModel.setDefaultItemsFile()
+            dbItems3Model.setDefaultItemsFile()
             dbUserModel.setDefaultItemsFile()
         }
     }
@@ -142,8 +147,9 @@ object LocalFileManager {
                 FileType.VEHICLE_FORMAT -> File(fileVehicleFormat)
                 FileType.ENGINE_FORMAT -> File(fileEngineFormat)
                 FileType.IMPROVEMENT -> File(fileImprovement)
-                FileType.CLASSIFICATION -> File(fileClassification)
+                FileType.ITEMS2 -> File(fileItems2)
                 FileType.ITEMS -> File(fileItems)
+                FileType.ITEMS3 -> File(fileItems3)
                 FileType.USER_DATA -> File(fileUserData.format(carNumber))
                 FileType.USER_LIST -> File(fileUserList)
             }
