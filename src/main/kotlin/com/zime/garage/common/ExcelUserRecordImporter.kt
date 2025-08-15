@@ -50,7 +50,7 @@ object ExcelUserRecordImporter {
         // 모델
         "model" to "model", "차량모델" to "model", "모델" to "model",
         // 국가(차량 형식)
-        "vehicleformat" to "vehicleFormat", "국가" to "vehicleFormat", "차량생산국가" to "vehicleFormat", "차량생산 국가" to "vehicleFormat",
+        "vehicleformat" to "vehicleFormat", "국가형식(유럽/북미/MHD)" to "vehicleFormat", "차량생산국가" to "vehicleFormat", "차량생산 국가" to "vehicleFormat", "국가형식" to "vehicleFormat",
         // 엔진
         "engine" to "engine", "엔진" to "engine",
         // 연식

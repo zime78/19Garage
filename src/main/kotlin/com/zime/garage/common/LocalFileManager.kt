@@ -136,6 +136,21 @@ object LocalFileManager {
             dbItems3Model.setDefaultItemsFile()
             dbUserModel.setDefaultItemsFile()
         }
+        // 사용자 리스트 파일 보장: 없으면 빈 파일 생성
+        try {
+            val userListFile = File(fileUserList)
+            if (!userListFile.exists()) {
+                // 상위 디렉토리 보장
+                Util.isDirectoryExists(userListFile.path)
+                userListFile.createNewFile()
+                if (DEBUG_LOG) {
+                    println("사용자 리스트 파일이 없어 새로 생성: ${userListFile.path}")
+                }
+            }
+        } catch (e: Exception) {
+            println("사용자 리스트 파일 생성 오류: ${e.message}")
+            e.printStackTrace()
+        }
     }
 
     /**

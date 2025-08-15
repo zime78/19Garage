@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.*
 import com.zime.garage.common.ExcelCombinedImporter
+import com.zime.garage.common.ExcelExporter
 import com.zime.garage.common.LocalFileManager
 import com.zime.garage.common.ResourceLoader
 import com.zime.garage.extensions.AboutIcon
@@ -647,7 +648,34 @@ fun main() = application {
             MenuBar {
                 Menu("파일", mnemonic = 'F') {
                     Item("파일 보내기",
-                        onClick = {  },
+                        onClick = {
+                            try {
+                                val chooser = JFileChooser().apply {
+                                    dialogTitle = "엑셀로 내보내기(.xlsx)"
+                                    isMultiSelectionEnabled = false
+                                    fileFilter = FileNameExtensionFilter("Excel 파일 (*.xlsx)", "xlsx")
+                                    selectedFile = java.io.File(ExcelExporter.defaultFileName("data"))
+                                }
+                                val resultCode = chooser.showSaveDialog(null)
+                                importResultTitle = "엑셀로 내보내기"
+                                if (resultCode == JFileChooser.APPROVE_OPTION) {
+                                    var file = chooser.selectedFile
+                                    if (!file.name.lowercase().endsWith(".xlsx")) {
+                                        file = java.io.File(file.parentFile, file.name + ".xlsx")
+                                    }
+                                    val result = ExcelExporter.exportAllToExcel(file)
+                                    importResultText = result.toString()
+                                    showImportResult = true
+                                } else {
+                                    importResultText = "내보내기가 취소되었습니다."
+                                    showImportResult = true
+                                }
+                            } catch (e: Exception) {
+                                importResultTitle = "엑셀로 내보내기"
+                                importResultText = "내보내기 중 오류: ${e.message}"
+                                showImportResult = true
+                            }
+                        },
                         shortcut = KeyShortcut(Key.C, ctrl = true)
                     )
                     Item("엑셀에서 고객+작업기록 추가",
