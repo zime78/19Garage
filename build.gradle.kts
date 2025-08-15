@@ -31,6 +31,9 @@ dependencies {
     implementation(compose.materialIconsExtended)
     implementation(kotlin("stdlib"))
 
+    // Excel 파싱 라이브러리
+    implementation("org.apache.poi:poi-ooxml:5.4.0")
+
     // 테스트 의존성
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

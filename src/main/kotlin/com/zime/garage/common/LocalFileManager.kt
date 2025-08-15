@@ -610,6 +610,7 @@ object LocalFileManager {
     /**
      * 차량별 작업 기록 파일에 레코드 1건을 추가합니다.
      * amount(금액)는 단가*수량으로 계산(실패 시 공란)
+     * 동일 내용의 작업기록이 이미 존재하면 중복 저장을 방지합니다(no/amount 제외 동일성 비교).
      */
     fun addUserRecordLine(
         carNumber: String,
@@ -638,6 +639,45 @@ object LocalFileManager {
             } else {
                 mutableListOf()
             }
+
+            // 1) 중복 검사(no/amount 제외 동일성 비교)
+            fun norm(s: String): String = s.trim()
+            val newFields = listOf(
+                norm(date), norm(vehicleNumber), norm(model), norm(vehicleFormat), norm(engine),
+                norm(manufactureYear), norm(mileage), norm(category1), norm(category2), norm(category3),
+                norm(item), norm(quantity), norm(unitPrice), norm(name), norm(contact), norm(remarks)
+            )
+
+            val isDuplicate = currentArray.any { el ->
+                try {
+                    val obj = el.jsonObject
+                    val fields = listOf(
+                        obj["date"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["vehicleNumber"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["model"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["vehicleFormat"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["engine"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["manufactureYear"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["mileage"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["category1"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["category2"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["category3"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["item"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["quantity"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["unitPrice"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["name"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["contact"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["remarks"]?.jsonPrimitive?.contentOrNull ?: "",
+                    ).map(::norm)
+                    fields == newFields
+                } catch (_: Exception) { false }
+            }
+            if (isDuplicate) {
+                // 중복 저장 방지: 추가하지 않고 false 반환
+                return false
+            }
+
+            // 2) 신규 추가
             val nextNo = (currentArray.size + 1).toString()
             // 금액 계산
             val amount = try {

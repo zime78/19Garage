@@ -17,8 +17,12 @@ import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
 import com.zime.garage.common.LocalFileManager
 import com.zime.garage.common.Material3DatePicker
+import com.zime.garage.common.ExcelUserRecordImporter
 import com.zime.garage.db.viewModel.*
 import java.awt.Toolkit
+import java.io.File
+import javax.swing.JFileChooser
+import javax.swing.filechooser.FileNameExtensionFilter
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -41,6 +45,11 @@ fun UserRecordWindow(userInfo: UserInfo, onClose: () -> Unit) {
     // 정렬 옵션 상태 및 목록
     var sortOption by remember { mutableStateOf("날짜 내림") }
     val sortOptions = remember { listOf("No 오름", "No 내림", "날짜 오름", "날짜 내림") }
+    // 엑셀 추가 결과 다이얼로그 상태
+    var showExcelResult by remember { mutableStateOf(false) }
+    var excelResult by remember { mutableStateOf<ExcelUserRecordImporter.ImportResult?>(null) }
+    // 창 항상 위 토글 상태 (파일 선택 시 임시 해제)
+    var windowAlwaysOnTop by remember { mutableStateOf(true) }
 
     LaunchedEffect(userInfo.carNumber) {
         LocalFileManager.ensureUserRecordDbWithHeader(userInfo.carNumber)
@@ -54,7 +63,7 @@ fun UserRecordWindow(userInfo: UserInfo, onClose: () -> Unit) {
     Window(
         title = "작업 기록 - ${userInfo.name} (${userInfo.carNumber})",
         onCloseRequest = onClose,
-        alwaysOnTop = true, //최상위로
+        alwaysOnTop = windowAlwaysOnTop, //최상위로
         state = WindowState(
             width = width.dp,
             height = height.dp,
@@ -97,6 +106,42 @@ fun UserRecordWindow(userInfo: UserInfo, onClose: () -> Unit) {
                         // 상단 탭의 "수정/삭제" 토글 버튼: 클릭 시 각 행의 수정/삭제 버튼 표시
                         OutlinedButton(onClick = { showRowActions = !showRowActions }) {
                             Text("수정/삭제\n 표시 ")
+                        }
+                        // 엑셀 가져오기 버튼: 파일 선택 후 가져오기 수행
+                        OutlinedButton(onClick = {
+                            // 파일 선택 시 메인 창이 가려지지 않도록 항상 위 설정을 잠시 해제
+                            windowAlwaysOnTop = false
+                            javax.swing.SwingUtilities.invokeLater {
+                                try {
+                                    val chooser = JFileChooser().apply {
+                                        fileFilter = FileNameExtensionFilter("Excel (*.xlsx)", "xlsx")
+                                    }
+                                    val result = chooser.showOpenDialog(null)
+                                    if (result == JFileChooser.APPROVE_OPTION) {
+                                        val selected = chooser.selectedFile
+                                        if (selected != null && selected.exists()) {
+                                            val res = ExcelUserRecordImporter.importFromExcel(selected, userInfo.carNumber)
+                                            excelResult = res
+                                            // 목록 갱신 및 결과 표시
+                                            records = applySort(LocalFileManager.loadUserRecordLines(userInfo.carNumber), sortOption)
+                                            showExcelResult = true
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    excelResult = ExcelUserRecordImporter.ImportResult(
+                                        processed = 0,
+                                        added = 0,
+                                        failed = 1,
+                                        messages = listOf("가져오기 중 오류: ${e.message}")
+                                    )
+                                    showExcelResult = true
+                                } finally {
+                                    // 선택 완료(또는 취소) 후 다시 항상 위로 복원
+                                    windowAlwaysOnTop = true
+                                }
+                            }
+                        }) {
+                            Text("엑셀 가져오기")
                         }
                         OutlinedButton(onClick = { showDeleteAllConfirm = true }, enabled = records.isNotEmpty()) {
                             Text("모두 삭제")
@@ -214,6 +259,21 @@ fun UserRecordWindow(userInfo: UserInfo, onClose: () -> Unit) {
                         showDeleteAllConfirm = false
                     }
                 )
+
+                // 엑셀 가져오기 결과 다이얼로그
+                if (showExcelResult) {
+                    AlertDialog(
+                        onDismissRequest = { showExcelResult = false },
+                        title = { Text("엑셀 추가 결과") },
+                        text = {
+                            val msg = excelResult?.toString() ?: "결과가 없습니다"
+                            Text(msg)
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showExcelResult = false }) { Text("확인") }
+                        }
+                    )
+                }
 
                 // 추가 다이얼로그
                 AddRecordDialog(

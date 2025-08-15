@@ -8,26 +8,24 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyShortcut
-import com.zime.garage.common.LocalFileManager
-import com.zime.garage.extensions.AboutIcon
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyShortcut
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.*
-import java.awt.Toolkit.*
+import com.zime.garage.common.ExcelCombinedImporter
+import com.zime.garage.common.LocalFileManager
 import com.zime.garage.common.ResourceLoader
+import com.zime.garage.extensions.AboutIcon
+import java.awt.Toolkit.getDefaultToolkit
+import javax.swing.JFileChooser
+import javax.swing.filechooser.FileNameExtensionFilter
 
 /**
  * 버튼 상태를 나타내는 열거형
@@ -282,59 +280,83 @@ fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0
         refreshUserList()
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            state = listState, // 스크롤 상태를 적용합니다.
-            modifier = Modifier.fillMaxSize().padding(end = 12.dp) // 스크롤바와 겹치지 않도록 패딩을 추가합니다.
+    Column(modifier = Modifier.fillMaxSize()) {
+        // 상단 요약 헤더: 총 인원 표시 (고정 영역)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // 실제 사용자 정보를 항목으로 표시합니다.
-            items(users) { userInfo ->
-                UserInfoItem(userInfo = userInfo, onClick = {
-                    println("[DEBUG] 사용자 클릭: $it")
-                    selectedUser = it
-                })
-            }
+            Text(
+                text = "고객 목록",
+                style = MaterialTheme.typography.h6,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "총 ${users.size}명",
+                style = MaterialTheme.typography.body1,
+                color = Color.Gray
+            )
+        }
+        Divider()
 
-            // 사용자가 없을 때 안내 메시지 표시
-            if (users.isEmpty()) {
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "등록된 사용자가 없습니다.",
-                            fontSize = 18.sp,
-                            color = Color.Gray
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "고객 추가 버튼을 클릭하여 새 사용자를 등록하세요.",
-                            fontSize = 14.sp,
-                            color = Color.Gray
-                        )
+        // 스크롤 가능한 리스트 영역
+        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            LazyColumn(
+                state = listState, // 스크롤 상태를 적용합니다.
+                modifier = Modifier.fillMaxSize().padding(end = 12.dp) // 스크롤바와 겹치지 않도록 패딩을 추가합니다.
+            ) {
+                // 실제 사용자 정보를 항목으로 표시합니다.
+                items(users) { userInfo ->
+                    UserInfoItem(userInfo = userInfo, onClick = {
+                        println("[DEBUG] 사용자 클릭: $it")
+                        selectedUser = it
+                    })
+                }
+
+                // 사용자가 없을 때 안내 메시지 표시
+                if (users.isEmpty()) {
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "등록된 사용자가 없습니다.",
+                                fontSize = 18.sp,
+                                color = Color.Gray
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "고객 추가 버튼을 클릭하여 새 사용자를 등록하세요.",
+                                fontSize = 14.sp,
+                                color = Color.Gray
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        // 항상 표시되는 스크롤바를 추가합니다.
-        VerticalScrollbar(
-            adapter = rememberScrollbarAdapter(listState),
-            modifier = Modifier
-                .align(Alignment.CenterEnd) // 스크롤바를 오른쪽 끝에 배치합니다.
-                .fillMaxHeight(),
-            style = ScrollbarStyle(
-                minimalHeight = calculateScrollbarHeight(listState).dp, // 스크롤바 최소 높이
-                thickness = 10.dp, // 스크롤바 두께
-                shape = MaterialTheme.shapes.medium, // 스크롤바 모양
-                hoverDurationMillis = 300, // 호버 지속 시간
-                unhoverColor = Color.Red.copy(alpha = 0.5f), // 호버되지 않은 상태의 색상
-                hoverColor = Color.Red // 호버된 상태의 색상
+            // 항상 표시되는 스크롤바를 추가합니다.
+            VerticalScrollbar(
+                adapter = rememberScrollbarAdapter(listState),
+                modifier = Modifier
+                    .align(Alignment.CenterEnd) // 스크롤바를 오른쪽 끝에 배치합니다.
+                    .fillMaxHeight(),
+                style = ScrollbarStyle(
+                    minimalHeight = calculateScrollbarHeight(listState).dp, // 스크롤바 최소 높이
+                    thickness = 10.dp, // 스크롤바 두께
+                    shape = MaterialTheme.shapes.medium, // 스크롤바 모양
+                    hoverDurationMillis = 300, // 호버 지속 시간
+                    unhoverColor = Color.Red.copy(alpha = 0.5f), // 호버되지 않은 상태의 색상
+                    hoverColor = Color.Red // 호버된 상태의 색상
+                )
             )
-        )
+        }
     }
 
     selectedUser?.let {
@@ -585,8 +607,6 @@ fun ReloadConfirmDialog(
 
 
 
-
-
 fun main() = application {
     //초기화
     LocalFileManager.load()
@@ -618,6 +638,11 @@ fun main() = application {
                 onDataManagementClick = { showDataManagement = true }
             )
 
+            // 엑셀 가져오기 결과 상태
+            var showImportResult by remember { mutableStateOf(false) }
+            var importResultText by remember { mutableStateOf("") }
+            var importResultTitle by remember { mutableStateOf("엑셀 -> 고객 추가") }
+
             // 메뉴바
             MenuBar {
                 Menu("파일", mnemonic = 'F') {
@@ -625,6 +650,36 @@ fun main() = application {
                         onClick = {  },
                         shortcut = KeyShortcut(Key.C, ctrl = true)
                     )
+                    Item("엑셀에서 고객+작업기록 추가",
+                        onClick = {
+                            try {
+                                // 파일 선택 대화상자 열기 (.xlsx 전용)
+                                val chooser = JFileChooser().apply {
+                                    dialogTitle = "엑셀 파일 선택(.xlsx)"
+                                    isMultiSelectionEnabled = false
+                                    fileFilter = FileNameExtensionFilter("Excel 파일 (*.xlsx)", "xlsx")
+                                }
+                                val resultCode = chooser.showOpenDialog(null)
+                                if (resultCode == JFileChooser.APPROVE_OPTION) {
+                                    val file = chooser.selectedFile
+                                    val result = ExcelCombinedImporter.importUsersAndRecords(file)
+                                    importResultTitle = "엑셀 -> 고객+작업기록 추가"
+                                    importResultText = "파일: ${file.name}\n\n${result}"
+                                    showImportResult = true
+                                } else {
+                                    importResultTitle = "엑셀 -> 고객+작업기록 추가"
+                                    importResultText = "가져오기가 취소되었습니다."
+                                    showImportResult = true
+                                }
+                            } catch (e: Exception) {
+                                importResultTitle = "엑셀 -> 고객+작업기록 추가"
+                                importResultText = "가져오기 중 오류: ${e.message}"
+                                showImportResult = true
+                            }
+                        },
+                        shortcut = KeyShortcut(Key.I, ctrl = true)
+                    )
+
                     Separator()
                     Item("종료",
                         onClick = { isOpen = false },
@@ -662,12 +717,37 @@ fun main() = application {
             }
 
 
-//            Box(
-//                modifier = Modifier.fillMaxSize(),
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Text(text = action)
-//            }
+            // 엑셀 가져오기 결과 다이얼로그
+            if (showImportResult) {
+                AlertDialog(
+                    onDismissRequest = { showImportResult = false },
+                    title = { Text(importResultTitle) },
+                    text = {
+                        Box(modifier = Modifier.heightIn(min = 0.dp, max = 400.dp).fillMaxWidth()) {
+                            val listState = rememberLazyListState()
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(end = 12.dp),
+                                state = listState
+                            ) {
+                                items(importResultText.split("\n")) { line ->
+                                    Text(line)
+                                }
+                            }
+                            VerticalScrollbar(
+                                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                                adapter = rememberScrollbarAdapter(listState)
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(onClick = { showImportResult = false }) {
+                            Text("확인")
+                        }
+                    }
+                )
+            }
         }
 
         // 데이터 관리 윈도우
