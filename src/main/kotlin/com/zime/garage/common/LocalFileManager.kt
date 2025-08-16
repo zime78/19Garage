@@ -259,7 +259,43 @@ object LocalFileManager {
     }
 
     fun initializeFiles(){
-        //사용자리스트 초기화.
+        // DB 폴더 초기화: backup 폴더는 제외, user / userDB 폴더 내 파일만 삭제
+        try {
+            // db/user 폴더 내 파일 모두 삭제 (폴더는 유지)
+            run {
+                val sampleUserFile = File(fileUserData.format("sample"))
+                val userDir = sampleUserFile.parentFile
+                if (userDir != null && userDir.exists() && userDir.isDirectory) {
+                    userDir.listFiles()?.forEach { f ->
+                        if (f.isFile) {
+                            val ok = f.delete()
+                            if (!ok) println("[WARNING] db/user 파일 삭제 실패: ${f.name}")
+                        }
+                    }
+                    if (DEBUG_LOG) println("[DEBUG] db/user 폴더 파일 초기화 완료")
+                }
+            }
+
+            // db/userDB 폴더 내 파일 모두 삭제 (폴더는 유지)
+            run {
+                val sampleUserDbFile = File(fileUserRecord.format("sample"))
+                val userDbDir = sampleUserDbFile.parentFile
+                if (userDbDir != null && userDbDir.exists() && userDbDir.isDirectory) {
+                    userDbDir.listFiles()?.forEach { f ->
+                        if (f.isFile) {
+                            val ok = f.delete()
+                            if (!ok) println("[WARNING] db/userDB 파일 삭제 실패: ${f.name}")
+                        }
+                    }
+                    if (DEBUG_LOG) println("[DEBUG] db/userDB 폴더 파일 초기화 완료")
+                }
+            }
+        } catch (e: Exception) {
+            println("[ERROR] DB 폴더 초기화 중 오류: ${e.message}")
+            e.printStackTrace()
+        }
+
+        // 사용자 리스트 파일 초기화
         initializeUserListFile()
     }
 
@@ -267,19 +303,25 @@ object LocalFileManager {
      *  사용자 리스트 파일 보장: 없으면 빈 파일 생성
      */
     fun initializeUserListFile(){
-        // 사용자 리스트 파일 보장: 없으면 빈 파일 생성
+        // 사용자 리스트 파일 초기화: 존재하면 내용을 비우고, 없으면 생성
         try {
             val userListFile = File(fileUserList)
-            if (!userListFile.exists()) {
-                // 상위 디렉토리 보장
-                Util.isDirectoryExists(userListFile.path)
+            // 상위 디렉토리 보장
+            Util.isDirectoryExists(userListFile.path)
+            if (userListFile.exists()) {
+                // 내용 비우기 (0바이트로 초기화)
+                userListFile.writeText("")
+                if (DEBUG_LOG) {
+                    println("사용자 리스트 파일 초기화(내용 비움): ${userListFile.path}")
+                }
+            } else {
                 userListFile.createNewFile()
                 if (DEBUG_LOG) {
                     println("사용자 리스트 파일이 없어 새로 생성: ${userListFile.path}")
                 }
             }
         } catch (e: Exception) {
-            println("사용자 리스트 파일 생성 오류: ${e.message}")
+            println("사용자 리스트 파일 초기화/생성 오류: ${e.message}")
             e.printStackTrace()
         }
     }
@@ -291,14 +333,7 @@ object LocalFileManager {
      */
     fun loadUserList(): List<String> {
         return try {
-            val userListFile = openFile(FileType.USER_LIST)
-            if (userListFile == null || !userListFile.exists()) {
-                if (DEBUG_LOG) {
-                    println("사용자 리스트 파일이 존재하지 않음")
-                }
-                return emptyList()
-            }
-
+            val userListFile = openFile(FileType.USER_LIST) ?: return emptyList()
             val userList = userListFile.readLines().filter { it.trim().isNotEmpty() }
             
             if (DEBUG_LOG) {
