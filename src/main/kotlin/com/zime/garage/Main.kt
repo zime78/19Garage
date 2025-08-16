@@ -289,7 +289,13 @@ fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0
     var sortOrder by remember { mutableStateOf(UserSortOrder.ASC) }
     var sortMenuExpanded by remember { mutableStateOf(false) }
 
-    val sortedUsers = remember(users, sortField, sortOrder) {
+    var searchQuery by remember { mutableStateOf("") }
+
+    val filteredUsers = remember(users, searchQuery) {
+        filterUsers(users, searchQuery)
+    }
+
+    val sortedUsers = remember(filteredUsers, sortField, sortOrder) {
         val comparator = Comparator<UserInfo> { a, b ->
             when (sortField) {
                 UserSortField.NAME -> {
@@ -317,7 +323,7 @@ fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0
                 }
             }
         }
-        users.sortedWith(comparator)
+        filteredUsers.sortedWith(comparator)
     }
 
     // 새로고침 함수
@@ -351,6 +357,23 @@ fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0
                 text = "총 ${users.size}명",
                 style = MaterialTheme.typography.body1,
                 color = Color.Gray
+            )
+        }
+        // 검색 입력 필드
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("검색") },
+                placeholder = { Text("이름/차량번호/전화번호") }
             )
         }
         // 정렬 컨트롤 영역
@@ -470,6 +493,22 @@ data class UserInfo(
     val registrationDate: String = "", // 등록일자 추가
     val dbFileName: String = "" // user_%s.db 파일명 추가
 )
+
+/**
+ * 사용자 리스트 검색 필터 함수
+ * - 검색어가 비어있으면 원본 리스트 반환
+ * - 이름/차량번호/전화번호에 대해 대소문자 무시 부분 일치(OR)로 필터링
+ */
+fun filterUsers(users: List<UserInfo>, query: String): List<UserInfo> {
+    val q = query.trim()
+    if (q.isEmpty()) return users
+    val lower = q.lowercase()
+    return users.filter { u ->
+        (u.name.takeIf { it.isNotBlank() }?.lowercase()?.contains(lower) == true) ||
+        (u.carNumber.takeIf { it.isNotBlank() }?.lowercase()?.contains(lower) == true) ||
+        (u.phoneNumber.takeIf { it.isNotBlank() }?.lowercase()?.contains(lower) == true)
+    }
+}
 
 /**
  * LocalFileManager에서 사용자 데이터를 로드하여 UserInfo 객체 리스트로 변환
