@@ -19,6 +19,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.*
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.input.pointer.*
 import com.zime.garage.common.ExcelCombinedImporter
 import com.zime.garage.common.ExcelExporter
 import com.zime.garage.common.LocalFileManager
@@ -27,6 +29,9 @@ import com.zime.garage.extensions.AboutIcon
 import java.awt.Toolkit.getDefaultToolkit
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 
 /**
  * 버튼 상태를 나타내는 열거형
@@ -48,7 +53,7 @@ enum class ButtonState {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 @Preview
-fun HomeView(onDataManagementClick: () -> Unit = {}) {
+fun HomeView(onDataManagementClick: () -> Unit = {}, externalReloadTrigger: Int = 0) {
     var buttonState by remember { mutableStateOf(ButtonState.NONE) }
     var reloadTrigger by remember { mutableStateOf(0) } // 리스트 갱신 트리거
     var showReloadConfirmDialog by remember { mutableStateOf(false) } // 다시 읽기 확인 다이얼로그
@@ -215,7 +220,7 @@ fun HomeView(onDataManagementClick: () -> Unit = {}) {
 //사용자 목록
             MaterialTheme {
                 Surface {
-                    UserList(buttonState = buttonState, reloadTrigger = reloadTrigger)
+                    UserList(buttonState = buttonState, reloadTrigger = reloadTrigger + externalReloadTrigger)
                 }
             }
 
@@ -634,15 +639,60 @@ fun main() = application {
 
             ) {
 
+            // 외부 갱신 트리거 상태
+            var externalReloadTrigger by remember { mutableStateOf(0) }
+
             // 메인 그리기
             HomeView(
-                onDataManagementClick = { showDataManagement = true }
+                onDataManagementClick = { showDataManagement = true },
+                externalReloadTrigger = externalReloadTrigger
             )
 
-            // 엑셀 가져오기 결과 상태
+            // 엑셀 가져오기 결과 상태 및 로딩 상태
+            val scope = rememberCoroutineScope()
             var showImportResult by remember { mutableStateOf(false) }
             var importResultText by remember { mutableStateOf("") }
             var importResultTitle by remember { mutableStateOf("엑셀 -> 고객 추가") }
+            var isLoading by remember { mutableStateOf(false) }
+            var loadingMessage by remember { mutableStateOf("가져오는 중입니다... 잠시만 기다려주세요.") }
+
+            // 로딩 화면 (배경 클릭/스크롤 차단)
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        // 커스텀 색상 반투명
+                        .background(Color(0xFF000000).copy(alpha = 0.6f))
+                        // 최상단 배치 보장
+                        .zIndex(999f)
+                        // 클릭 차단 (시각 효과 제거)
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                        ) { /* consume click */ }
+                        // 기타 포인터 이벤트(스크롤/드래그 등) 차단
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    event.changes.forEach { it.consume() }
+                                }
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Surface(elevation = 8.dp, modifier = Modifier.padding(20.dp)) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            CircularProgressIndicator()
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(loadingMessage)
+                        }
+                    }
+                }
+            }
 
             // 메뉴바
             MenuBar {
@@ -681,7 +731,6 @@ fun main() = application {
                     Item("엑셀에서 고객+작업기록 추가",
                         onClick = {
                             try {
-                                // 파일 선택 대화상자 열기 (.xlsx 전용)
                                 val chooser = JFileChooser().apply {
                                     dialogTitle = "엑셀 파일 선택(.xlsx)"
                                     isMultiSelectionEnabled = false
@@ -689,18 +738,36 @@ fun main() = application {
                                 }
                                 val resultCode = chooser.showOpenDialog(null)
                                 if (resultCode == JFileChooser.APPROVE_OPTION) {
-
-                                    //백업함.
-                                    LocalFileManager.backupDatabase()
-
-                                    //사용자 정보 전체 삭제후 다시읽음.(백업도진행)
-                                    LocalFileManager.initializeFiles()
-
                                     val file = chooser.selectedFile
-                                    val result = ExcelCombinedImporter.importUsersAndRecords(file)
-                                    importResultTitle = "엑셀 -> 고객+작업기록 추가"
-                                    importResultText = "파일: ${file.name}\n\n${result}"
-                                    showImportResult = true
+                                    isLoading = true
+                                    loadingMessage = "엑셀에서 데이터를 가져오는 중입니다..."
+                                    scope.launch {
+                                        try {
+                                            withContext(Dispatchers.IO) {
+                                                // 백업 및 초기화는 IO 스레드에서 실행
+                                                LocalFileManager.backupDatabase()
+                                                LocalFileManager.initializeFiles()
+                                            }
+                                            val result = withContext(Dispatchers.IO) {
+                                                ExcelCombinedImporter.importUsersAndRecords(file)
+                                            }
+                                            // 파일에서 사용자 데이터를 다시 읽어 UI 반영 준비
+                                            withContext(Dispatchers.IO) {
+                                                loadUsersFromFile()
+                                            }
+                                            // 외부 트리거 증가로 리스트 갱신
+                                            externalReloadTrigger++
+                                            importResultTitle = "엑셀 -> 고객+작업기록 추가"
+                                            importResultText = "파일: ${file.name}\n\n${result}"
+                                            showImportResult = true
+                                        } catch (e: Exception) {
+                                            importResultTitle = "엑셀 -> 고객+작업기록 추가"
+                                            importResultText = "가져오기 중 오류: ${e.message}"
+                                            showImportResult = true
+                                        } finally {
+                                            isLoading = false
+                                        }
+                                    }
                                 } else {
                                     importResultTitle = "엑셀 -> 고객+작업기록 추가"
                                     importResultText = "가져오기가 취소되었습니다."
@@ -710,6 +777,7 @@ fun main() = application {
                                 importResultTitle = "엑셀 -> 고객+작업기록 추가"
                                 importResultText = "가져오기 중 오류: ${e.message}"
                                 showImportResult = true
+                                isLoading = false
                             }
                         },
                         shortcut = KeyShortcut(Key.I, ctrl = true)
