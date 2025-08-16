@@ -35,6 +35,8 @@ import javax.swing.filechooser.FileNameExtensionFilter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 /**
  * 버튼 상태를 나타내는 열거형
@@ -47,6 +49,23 @@ enum class ButtonState {
     BUTTON_3,       // 버튼 3 상태 (미사용)
     BUTTON_4,       // 버튼 4 상태 (미사용)
     BUTTON_DB,      // 데이터베이스 관련 상태 (미사용)
+}
+
+/**
+ * 메인 화면 고객 목록 정렬 기준
+ */
+enum class UserSortField {
+    NAME,           // 이름
+    CAR_NUMBER,     // 차량번호
+    REG_DATE        // 등록일자(yyyy-MM-dd)
+}
+
+/**
+ * 정렬 방향
+ */
+enum class UserSortOrder {
+    ASC,            // 오름차순
+    DESC            // 내림차순
 }
 
 /**
@@ -265,6 +284,42 @@ fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0
     // 실제 사용자 데이터를 LocalFileManager에서 로드
     var users by remember { mutableStateOf(loadUsersFromFile()) }
 
+    // 정렬 상태 및 정렬된 리스트 계산
+    var sortField by remember { mutableStateOf(UserSortField.NAME) }
+    var sortOrder by remember { mutableStateOf(UserSortOrder.ASC) }
+    var sortMenuExpanded by remember { mutableStateOf(false) }
+
+    val sortedUsers = remember(users, sortField, sortOrder) {
+        val comparator = Comparator<UserInfo> { a, b ->
+            when (sortField) {
+                UserSortField.NAME -> {
+                    val ab = a.name.isBlank(); val bb = b.name.isBlank()
+                    if (ab && !bb) 1 else if (!ab && bb) -1 else {
+                        val cmp = a.name.lowercase().compareTo(b.name.lowercase())
+                        if (sortOrder == UserSortOrder.ASC) cmp else -cmp
+                    }
+                }
+                UserSortField.CAR_NUMBER -> {
+                    val ab = a.carNumber.isBlank(); val bb = b.carNumber.isBlank()
+                    if (ab && !bb) 1 else if (!ab && bb) -1 else {
+                        val cmp = a.carNumber.lowercase().compareTo(b.carNumber.lowercase())
+                        if (sortOrder == UserSortOrder.ASC) cmp else -cmp
+                    }
+                }
+                UserSortField.REG_DATE -> {
+                    val ab = a.registrationDate.isBlank(); val bb = b.registrationDate.isBlank()
+                    if (ab && !bb) 1 else if (!ab && bb) -1 else {
+                        val ad = parseDateMillis(a.registrationDate)
+                        val bd = parseDateMillis(b.registrationDate)
+                        val cmp = ad.compareTo(bd)
+                        if (sortOrder == UserSortOrder.ASC) cmp else -cmp
+                    }
+                }
+            }
+        }
+        users.sortedWith(comparator)
+    }
+
     // 새로고침 함수
     fun refreshUserList() {
         users = loadUsersFromFile()
@@ -298,6 +353,36 @@ fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0
                 color = Color.Gray
             )
         }
+        // 정렬 컨트롤 영역
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 정렬 기준 선택 드롭다운
+            Box {
+                Button(onClick = { sortMenuExpanded = true }) {
+                    val fieldLabel = when (sortField) {
+                        UserSortField.NAME -> "이름"
+                        UserSortField.CAR_NUMBER -> "차량번호"
+                        UserSortField.REG_DATE -> "등록일자"
+                    }
+                    Text("정렬: $fieldLabel")
+                }
+                DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
+                    DropdownMenuItem(onClick = { sortField = UserSortField.NAME; sortMenuExpanded = false }) { Text("이름") }
+                    DropdownMenuItem(onClick = { sortField = UserSortField.CAR_NUMBER; sortMenuExpanded = false }) { Text("차량번호") }
+                    DropdownMenuItem(onClick = { sortField = UserSortField.REG_DATE; sortMenuExpanded = false }) { Text("등록일자") }
+                }
+            }
+            Spacer(Modifier.width(8.dp))
+            // 오름/내림 토글 버튼
+            OutlinedButton(onClick = { sortOrder = if (sortOrder == UserSortOrder.ASC) UserSortOrder.DESC else UserSortOrder.ASC }) {
+                Text(if (sortOrder == UserSortOrder.ASC) "오름차순" else "내림차순")
+            }
+        }
         Divider()
 
         // 스크롤 가능한 리스트 영역
@@ -307,7 +392,7 @@ fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0
                 modifier = Modifier.fillMaxSize().padding(end = 12.dp) // 스크롤바와 겹치지 않도록 패딩을 추가합니다.
             ) {
                 // 실제 사용자 정보를 항목으로 표시합니다.
-                items(users) { userInfo ->
+                items(sortedUsers) { userInfo ->
                     UserInfoItem(userInfo = userInfo, onClick = {
                         println("[DEBUG] 사용자 클릭: $it")
                         selectedUser = it
@@ -1062,3 +1147,14 @@ fun main() = application {
     }
 }
 
+
+
+// 날짜 문자열(yyyy-MM-dd)을 epoch milli로 변환하는 헬퍼. 실패하거나 빈 값이면 Long.MAX_VALUE 반환.
+private fun parseDateMillis(dateStr: String): Long {
+    return try {
+        if (dateStr.isBlank()) Long.MAX_VALUE
+        else SimpleDateFormat("yyyy-MM-dd", Locale.KOREA).parse(dateStr)?.time ?: Long.MAX_VALUE
+    } catch (e: Exception) {
+        Long.MAX_VALUE
+    }
+}
