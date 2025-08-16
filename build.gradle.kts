@@ -11,6 +11,10 @@ plugins {
 group = "com.zime"
 version = "1.0.1" // 버전 업데이트
 
+// 버전 코드 관리
+val versionCode = 2
+val versionName = version.toString()
+
 repositories {
     mavenCentral()
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
@@ -56,6 +60,10 @@ compose.desktop {
                     put("NSDocumentsFolderUsageDescription", "이 애플리케이션은 문서 폴더에 파일을 읽고 저장하는데 필요합니다.")
                     put("NSDownloadsFolderUsageDescription", "이 애플리케이션은 다운로드 폴더에 파일을 읽고 저장하는데 필요합니다.")
                     put("NSDesktopFolderUsageDescription", "이 애플리케이션은 데스크톱 폴더에 파일을 읽고 저장하는데 필요합니다.")
+
+                    // 전체 버전 정보를 번들 정보에 포함
+                    put("CFBundleShortVersionString", versionName)
+                    put("CFBundleVersion", versionCode.toString())
                 }
 
                 // 인텔 및 애플 실리콘 맥 지원
@@ -67,6 +75,7 @@ compose.desktop {
 
 tasks.withType<JavaExec> {
     environment("APP_VERSION", project.version)  // 환경 변수로 버전 전달
+    environment("APP_VERSION_CODE", versionCode)  // 버전 코드
 }
 
 tasks.test {

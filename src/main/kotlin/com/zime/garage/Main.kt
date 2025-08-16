@@ -230,7 +230,7 @@ fun HomeView(onDataManagementClick: () -> Unit = {}, externalReloadTrigger: Int 
                 ) {
                     //section 버전
                     Text(
-                        "버전: $versionName (Alpha)",
+                        "버전: $versionName",
                         modifier = Modifier.padding(end = 20.dp)
                     )
                 }

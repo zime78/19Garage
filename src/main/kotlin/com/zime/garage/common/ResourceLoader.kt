@@ -11,38 +11,42 @@ object ResourceLoader {
     val APP_VERSION: String by lazy {
         loadVersionFromProperties()
     }
-    
+
     /**
-     * version.properties 파일에서 버전 정보를 읽어옵니다.
-     * 파일이 없거나 읽기에 실패하면 기본값을 반환합니다.
+     * 환경 변수에서 버전 정보를 읽어옵니다.
+     * build.gradle.kts에서 설정한 환경 변수를 사용합니다.
+     * 환경 변수가 없거나 읽기에 실패하면 기본값을 반환합니다.
      */
     private fun loadVersionFromProperties(): String {
         return try {
-            val properties = Properties()
-            val inputStream = ResourceLoader::class.java.classLoader.getResourceAsStream("version.properties")
-            
-            if (inputStream != null) {
-                properties.load(inputStream)
-                val version = properties.getProperty("version")
-                inputStream.close()
-                
-                if (!version.isNullOrBlank()) {
-                    println("[INFO] 버전 정보 로드 성공: $version")
-                    version
-                } else {
-                    println("[WARNING] version.properties에서 버전 정보를 찾을 수 없습니다. 기본값 사용")
+            // build.gradle.kts에서 설정한 환경 변수들
+            val versionName = System.getenv("APP_VERSION")
+            val versionCode = System.getenv("APP_VERSION_CODE")
+
+            when {
+                // 버전 이름과 코드가 모두 있으면 조합
+                !versionName.isNullOrBlank() && !versionCode.isNullOrBlank() -> {
+                    val combinedVersion = "$versionName($versionCode)"
+                    println("[INFO] 버전 정보 조합 성공: $combinedVersion")
+                    combinedVersion
+                }
+                // 버전 이름만 있으면 사용
+                !versionName.isNullOrBlank() -> {
+                    println("[INFO] 버전 이름 로드 성공: $versionName")
+                    versionName
+                }
+                else -> {
+                    println("[WARNING] 환경 변수에서 버전 정보를 찾을 수 없습니다. 기본값 사용")
                     "1.0.0" // 기본값
                 }
-            } else {
-                println("[WARNING] version.properties 파일을 찾을 수 없습니다. 기본값 사용")
-                "1.0.0" // 기본값
             }
         } catch (e: Exception) {
             println("[ERROR] 버전 정보 로드 중 오류 발생: ${e.message}. 기본값 사용")
             "1.0.0" // 기본값
         }
     }
-    
+
+
     private val properties: Map<String, String> = mapOf(
         "tooltip_setting" to "내부 설정값을 변경합니다.",
         "tooltip_reload" to "추가한 고객 정보를 다시 읽습니다.\n고객 추가후 업데이트 안되었으면 눌러주세요.",
