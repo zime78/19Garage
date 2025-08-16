@@ -611,6 +611,7 @@ fun main() = application {
     var isOpen by remember { mutableStateOf(true) }
     var showDataManagement by remember { mutableStateOf(false) }
     var showVerDialog by remember { mutableStateOf(false) } // 설정 다이얼로그 표시 상태
+    var showManual by remember { mutableStateOf(false) } // 사용설명서 창 표시 상태
 
     if (isOpen) {
 
@@ -790,27 +791,13 @@ fun main() = application {
                 }
 
                 Menu("도움말", mnemonic = 'A') {
-//                    CheckboxItem(
-//                        "Advanced settings",
-//                        checked = isSubmenuShowing,
-//                        onCheckedChange = {
-//                            isSubmenuShowing = !isSubmenuShowing
-//                        }
-//                    )
-//                    if (isSubmenuShowing) {
-//                        Menu("Settings") {
-//                            Item("Setting 1", onClick = {  })
-//                            Item("Setting 2", onClick = {  })
-//                        }
-//                    }
-//                    Separator()
                     Item("사용설명서",
                         icon = HelpfIcon,
-                        onClick = { })
+                        onClick = { showManual = true })
+                    Separator()
                     Item("정보",
                         icon = AboutIcon,
                         onClick = {showVerDialog = true })
-
                 }
             }
 
@@ -875,6 +862,26 @@ fun main() = application {
             ) {
                 DataManagementWindow(
                     onCloseRequest = { showDataManagement = false }
+                )
+            }
+        }
+
+        // 사용설명서 윈도우
+        if (showManual) {
+            val manualWidth = (screenSize.width * 0.6).toInt()
+            val manualHeight = (screenSize.height * 0.7).toInt()
+            Window(
+                title = "사용설명서",
+                onCloseRequest = { showManual = false },
+                alwaysOnTop = true,
+                state = WindowState(
+                    width = manualWidth.dp,
+                    height = manualHeight.dp,
+                    position = WindowPosition(Alignment.Center)
+                )
+            ) {
+                ManualWindow(
+                    onCloseRequest = { showManual = false }
                 )
             }
         }
