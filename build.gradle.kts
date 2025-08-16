@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "com.zime"
-version = "1.0.0" // 버전 업데이트
+version = "1.0.1" // 버전 업데이트
 
 repositories {
     mavenCentral()
