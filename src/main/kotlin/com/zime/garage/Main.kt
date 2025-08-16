@@ -689,6 +689,13 @@ fun main() = application {
                                 }
                                 val resultCode = chooser.showOpenDialog(null)
                                 if (resultCode == JFileChooser.APPROVE_OPTION) {
+
+                                    //백업함.
+                                    LocalFileManager.backupDatabase()
+
+                                    //사용자 정보 전체 삭제후 다시읽음.(백업도진행)
+                                    LocalFileManager.initializeFiles()
+
                                     val file = chooser.selectedFile
                                     val result = ExcelCombinedImporter.importUsersAndRecords(file)
                                     importResultTitle = "엑셀 -> 고객+작업기록 추가"

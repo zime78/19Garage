@@ -34,6 +34,12 @@ GitHub : https://github.com/zime78/19Garage  <br>
 ```bash
 ./gradlew createDistributable
 ```
+배포용 DMG 로생성
+```bash
+./gradlew packageDmg
+```
+
+
 
 참고: Gradle의 -t 옵션은 "continuous build"를 의미하며 태스크 이름이 아닙니다. "native"라는 태스크는 존재하지 않으므로 사용하지 마세요.
 

@@ -9,6 +9,10 @@ import java.io.File
 import kotlinx.serialization.json.*
 import java.text.SimpleDateFormat
 import java.util.*
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 /**
  * 로컬 파일 관리자
@@ -254,6 +258,32 @@ object LocalFileManager {
         }
     }
 
+    fun initializeFiles(){
+        //사용자리스트 초기화.
+        initializeUserListFile()
+    }
+
+    /**
+     *  사용자 리스트 파일 보장: 없으면 빈 파일 생성
+     */
+    fun initializeUserListFile(){
+        // 사용자 리스트 파일 보장: 없으면 빈 파일 생성
+        try {
+            val userListFile = File(fileUserList)
+            if (!userListFile.exists()) {
+                // 상위 디렉토리 보장
+                Util.isDirectoryExists(userListFile.path)
+                userListFile.createNewFile()
+                if (DEBUG_LOG) {
+                    println("사용자 리스트 파일이 없어 새로 생성: ${userListFile.path}")
+                }
+            }
+        } catch (e: Exception) {
+            println("사용자 리스트 파일 생성 오류: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+
     /**
      * 사용자 리스트 파일 로드
      * 
@@ -266,23 +296,6 @@ object LocalFileManager {
                 if (DEBUG_LOG) {
                     println("사용자 리스트 파일이 존재하지 않음")
                 }
-
-                // 사용자 리스트 파일 보장: 없으면 빈 파일 생성
-                try {
-                    val userListFile = File(fileUserList)
-                    if (!userListFile.exists()) {
-                        // 상위 디렉토리 보장
-                        Util.isDirectoryExists(userListFile.path)
-                        userListFile.createNewFile()
-                        if (DEBUG_LOG) {
-                            println("사용자 리스트 파일이 없어 새로 생성: ${userListFile.path}")
-                        }
-                    }
-                } catch (e: Exception) {
-                    println("사용자 리스트 파일 생성 오류: ${e.message}")
-                    e.printStackTrace()
-                }
-
                 return emptyList()
             }
 
@@ -987,6 +1000,104 @@ object LocalFileManager {
             println("[ERROR] 사용자 DB 파일 삭제 오류: ${e.message}")
             e.printStackTrace()
             false
+        }
+    }
+
+    /**
+     * DB 폴더를 zip으로 백업합니다.
+     * - 백업 위치: db/backup
+     * - 파일명: 프로젝트이름_yyyyMMdd_HHmmss.zip (프로젝트이름은 "19Garage")
+     * - 최대 보관 개수: 기본 100개, 초과 시 오래된 파일부터 삭제
+     */
+    fun backupDatabase(maxBackups: Int = 100, projectName: String = "19Garage"): File? {
+        try {
+            // db 루트와 backup 디렉터리 경로 계산
+            val dbRoot = File(fileVehicleModel).parentFile // vehicleModel.txt가 위치한 디렉터리를 DB 루트로 간주
+            val backupDir = File(dbRoot, "backup")
+
+            if (!dbRoot.exists() || !dbRoot.isDirectory) {
+                println("[ERROR] 백업 실패: DB 디렉터리가 존재하지 않습니다. path=${dbRoot.absolutePath}")
+                return null
+            }
+
+            if (!backupDir.exists()) {
+                backupDir.mkdirs()
+            }
+
+            // 파일명 생성: 프로젝트명_yyyyMMdd_HHmmss.zip
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.KOREA).format(Date())
+            val zipFile = File(backupDir, "${projectName}_${timestamp}.zip")
+
+            // Zip 생성 (backup 디렉터리는 제외)
+            FileOutputStream(zipFile).use { fos ->
+                ZipOutputStream(fos).use { zos ->
+                    zipDirectoryRecursively(
+                        source = dbRoot,
+                        baseDir = dbRoot,
+                        zos = zos,
+                        excludeDir = backupDir
+                    )
+                }
+            }
+
+            if (DEBUG_LOG) {
+                println("[DEBUG] 백업 생성 완료: ${zipFile.absolutePath}")
+            }
+
+            // 최대 보관 개수 유지: 오래된 파일부터 삭제
+            pruneBackups(backupDir, maxBackups)
+
+            return zipFile
+        } catch (e: Exception) {
+            println("[ERROR] 백업 생성 중 오류: ${e.message}")
+            e.printStackTrace()
+            return null
+        }
+    }
+
+    /**
+     * 디렉터리를 재귀적으로 순회하여 ZipOutputStream에 추가합니다.
+     * excludeDir 하위 경로는 제외합니다.
+     */
+    private fun zipDirectoryRecursively(source: File, baseDir: File, zos: ZipOutputStream, excludeDir: File) {
+        val files = source.listFiles() ?: return
+        for (file in files) {
+            // backup 디렉터리 제외
+            if (file.canonicalPath.startsWith(excludeDir.canonicalPath)) {
+                continue
+            }
+            if (file.isDirectory) {
+                zipDirectoryRecursively(file, baseDir, zos, excludeDir)
+            } else {
+                val relativePath = baseDir.toURI().relativize(file.toURI()).path
+                val entry = ZipEntry(relativePath)
+                zos.putNextEntry(entry)
+                FileInputStream(file).use { fis ->
+                    fis.copyTo(zos)
+                }
+                zos.closeEntry()
+            }
+        }
+    }
+
+    /**
+     * 백업 보관 개수를 maxBackups로 유지합니다. 초과분은 오래된 파일부터 삭제합니다.
+     */
+    private fun pruneBackups(backupDir: File, maxBackups: Int) {
+        val zipFiles = backupDir.listFiles { f -> f.isFile && f.name.lowercase(Locale.getDefault()).endsWith(".zip") }
+            ?.sortedBy { it.lastModified() }
+            ?: return
+        val excess = zipFiles.size - maxBackups
+        if (excess > 0) {
+            for (i in 0 until excess) {
+                val file = zipFiles[i]
+                val ok = file.delete()
+                if (!ok) {
+                    println("[WARNING] 오래된 백업 파일 삭제 실패: ${file.name}")
+                } else if (DEBUG_LOG) {
+                    println("[DEBUG] 오래된 백업 파일 삭제: ${file.name}")
+                }
+            }
         }
     }
 }
