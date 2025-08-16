@@ -50,12 +50,13 @@ object ResourceLoader {
         
         // 설정 화면 관련 문자열
         "settings_title" to "설정",
-        "settings_version_info" to "버전 정보",
-        "settings_app_version" to "앱 버전",
-        "settings_close" to "닫기",
-        "settings_app_name" to "19Garage",
-        "settings_build_date" to "빌드 날짜",
-        "settings_unknown_version" to "알 수 없음"
+        "version_title" to "버전",
+        "version_info" to "버전 정보",
+        "version_app_version" to "앱 버전",
+        "version_close" to "닫기",
+        "version_app_name" to "19Garage",
+        "version_build_date" to "빌드 날짜",
+        "version_unknown_version" to "알 수 없음"
     )
 
     fun getString(key: String): String {

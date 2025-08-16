@@ -26,6 +26,7 @@ import com.zime.garage.common.ExcelExporter
 import com.zime.garage.common.LocalFileManager
 import com.zime.garage.common.ResourceLoader
 import com.zime.garage.extensions.AboutIcon
+import com.zime.garage.extensions.HelpfIcon
 import java.awt.Toolkit.getDefaultToolkit
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
@@ -57,7 +58,6 @@ fun HomeView(onDataManagementClick: () -> Unit = {}, externalReloadTrigger: Int 
     var buttonState by remember { mutableStateOf(ButtonState.NONE) }
     var reloadTrigger by remember { mutableStateOf(0) } // 리스트 갱신 트리거
     var showReloadConfirmDialog by remember { mutableStateOf(false) } // 다시 읽기 확인 다이얼로그
-    var showSettingsDialog by remember { mutableStateOf(false) } // 설정 다이얼로그 표시 상태
 
 //    var text by remember { mutableStateOf("Hello, World!") }
     MaterialTheme(
@@ -173,8 +173,6 @@ fun HomeView(onDataManagementClick: () -> Unit = {}, externalReloadTrigger: Int 
                                         .size(35.dp) // 이미지 크기 지정 (width, height 동시 설정)
                                         .clickable(onClick = {
                                             println("설정 아이콘 클릭됨")
-                                            // 설정 다이얼로그 표시
-                                            showSettingsDialog = true
                                         }) // 설정 아이콘 클릭 이벤트
                                 )
                             }
@@ -254,15 +252,7 @@ fun HomeView(onDataManagementClick: () -> Unit = {}, externalReloadTrigger: Int 
         )
     }
     
-    // 설정 다이얼로그
-    if (showSettingsDialog) {
-        SettingsDialog(
-            onDismiss = {
-                showSettingsDialog = false
-                println("[INFO] 설정 다이얼로그가 닫혔습니다.")
-            }
-        )
-    }
+
 }
 
 @Composable
@@ -620,6 +610,7 @@ fun main() = application {
 //    var action by remember { mutableStateOf("Last action: None") }
     var isOpen by remember { mutableStateOf(true) }
     var showDataManagement by remember { mutableStateOf(false) }
+    var showVerDialog by remember { mutableStateOf(false) } // 설정 다이얼로그 표시 상태
 
     if (isOpen) {
 
@@ -655,6 +646,7 @@ fun main() = application {
             var importResultTitle by remember { mutableStateOf("엑셀 -> 고객 추가") }
             var isLoading by remember { mutableStateOf(false) }
             var loadingMessage by remember { mutableStateOf("가져오는 중입니다... 잠시만 기다려주세요.") }
+
 
             // 로딩 화면 (배경 클릭/스크롤 차단)
             if (isLoading) {
@@ -812,9 +804,12 @@ fun main() = application {
 //                        }
 //                    }
 //                    Separator()
+                    Item("사용설명서",
+                        icon = HelpfIcon,
+                        onClick = { })
                     Item("정보",
                         icon = AboutIcon,
-                        onClick = { })
+                        onClick = {showVerDialog = true })
 
                 }
             }
@@ -851,6 +846,16 @@ fun main() = application {
                     }
                 )
             }
+
+            // 설정 다이얼로그 (Window 내부 구성으로 이동)
+            if (showVerDialog) {
+                VersionDialog(
+                    onDismiss = {
+                        showVerDialog = false
+                        println("[INFO] 버전정보 다이얼로그가 닫혔습니다.")
+                    }
+                )
+            }
         }
 
         // 데이터 관리 윈도우
@@ -873,6 +878,7 @@ fun main() = application {
                 )
             }
         }
+
     }
 }
 
