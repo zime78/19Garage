@@ -25,6 +25,8 @@ import com.zime.garage.common.ExcelCombinedImporter
 import com.zime.garage.common.ExcelExporter
 import com.zime.garage.common.LocalFileManager
 import com.zime.garage.common.ResourceLoader
+import com.zime.garage.utils.Util
+import java.io.File
 import com.zime.garage.extensions.AboutIcon
 import com.zime.garage.extensions.HelpfIcon
 import java.awt.Toolkit.getDefaultToolkit
@@ -58,6 +60,7 @@ fun HomeView(onDataManagementClick: () -> Unit = {}, externalReloadTrigger: Int 
     var buttonState by remember { mutableStateOf(ButtonState.NONE) }
     var reloadTrigger by remember { mutableStateOf(0) } // 리스트 갱신 트리거
     var showReloadConfirmDialog by remember { mutableStateOf(false) } // 다시 읽기 확인 다이얼로그
+    val scope = rememberCoroutineScope()
 
 //    var text by remember { mutableStateOf("Hello, World!") }
     MaterialTheme(
@@ -251,7 +254,6 @@ fun HomeView(onDataManagementClick: () -> Unit = {}, externalReloadTrigger: Int 
             }
         )
     }
-    
 
 }
 
@@ -648,6 +650,17 @@ fun main() = application {
             var isLoading by remember { mutableStateOf(false) }
             var loadingMessage by remember { mutableStateOf("가져오는 중입니다... 잠시만 기다려주세요.") }
 
+            // 백업 결과 다이얼로그 상태
+            var showBackupResult by remember { mutableStateOf(false) }
+            var backupResultText by remember { mutableStateOf("") }
+
+            // 복원 관련 상태
+            var showRestoreDialog by remember { mutableStateOf(false) }
+            var selectedBackupFile by remember { mutableStateOf<java.io.File?>(null) }
+            var showRestoreConfirm by remember { mutableStateOf(false) }
+            var showRestoreResult by remember { mutableStateOf(false) }
+            var restoreResultText by remember { mutableStateOf("") }
+
 
             // 로딩 화면 (배경 클릭/스크롤 차단)
             if (isLoading) {
@@ -775,6 +788,35 @@ fun main() = application {
                         },
                         shortcut = KeyShortcut(Key.I, ctrl = true)
                     )
+                    Separator()
+                    Item("DB 백업",
+                        onClick = {
+                            scope.launch {
+                                try {
+                                    val zipFile = withContext(Dispatchers.IO) {
+                                        LocalFileManager.backupDatabase()
+                                    }
+                                    backupResultText = if (zipFile != null) {
+                                        "백업이 완료되었습니다.\n" + zipFile.absolutePath
+                                    } else {
+                                        "백업 실패: 생성된 파일이 없습니다."
+                                    }
+                                } catch (e: Exception) {
+                                    backupResultText = "백업 중 오류: ${e.message}"
+                                } finally {
+                                    showBackupResult = true
+                                }
+                            }
+                        },
+                        shortcut = KeyShortcut(Key. B, ctrl = true)
+                    )
+                    Item("DB 백업 복원",
+                        onClick = {
+                            selectedBackupFile = null
+                            showRestoreDialog = true
+                        },
+                        shortcut = KeyShortcut(Key. R, ctrl = true)
+                    )
 
                     Separator()
                     Item("종료",
@@ -801,6 +843,137 @@ fun main() = application {
                 }
             }
 
+            // 백업 결과 다이얼로그
+            if (showBackupResult) {
+                AlertDialog(
+                    onDismissRequest = { showBackupResult = false },
+                    title = { Text("백업 결과") },
+                    text = { Text(backupResultText) },
+                    confirmButton = {
+                        Button(onClick = { showBackupResult = false }) {
+                            Text("확인")
+                        }
+                    }
+                )
+            }
+
+            // DB 백업 복원: 파일 선택 다이얼로그
+            if (showRestoreDialog) {
+                val backupFiles = remember(showRestoreDialog) {
+                    val dir = File(Util.getDatabasePath("db/backup", true))
+                    dir.mkdirs()
+                    dir.listFiles { f -> f.isFile && f.name.lowercase().endsWith(".zip") }
+                        ?.sortedByDescending { it.name }
+                        ?: emptyList()
+                }
+                AlertDialog(
+                    onDismissRequest = { showRestoreDialog = false },
+                    title = { Text("DB 백업 복원") },
+                    text = {
+                        Column(modifier = Modifier.heightIn(min = 0.dp, max = 400.dp).fillMaxWidth()) {
+                            if (backupFiles.isEmpty()) {
+                                Text("백업 파일이 없습니다. 먼저 백업을 생성하세요.")
+                            } else {
+                                val listState = rememberLazyListState()
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    LazyColumn(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(end = 12.dp),
+                                        state = listState
+                                    ) {
+                                        items(backupFiles) { f ->
+                                            val isSelected = selectedBackupFile?.absolutePath == f.absolutePath
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .background(if (isSelected) Color(0xFFE3F2FD) else Color.Transparent)
+                                                    .clickable { selectedBackupFile = f }
+                                                    .padding(vertical = 6.dp, horizontal = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(f.name)
+                                            }
+                                        }
+                                    }
+                                    VerticalScrollbar(
+                                        modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                                        adapter = rememberScrollbarAdapter(listState)
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                if (selectedBackupFile != null) {
+                                    showRestoreDialog = false
+                                    showRestoreConfirm = true
+                                }
+                            },
+                            enabled = selectedBackupFile != null
+                        ) { Text("선택") }
+                    },
+                    dismissButton = {
+                        Button(onClick = { showRestoreDialog = false }) { Text("취소") }
+                    }
+                )
+            }
+
+            // 복원 경고 팝업
+            if (showRestoreConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showRestoreConfirm = false },
+                    title = { Text("경고") },
+                    text = { Text("선택한 백업으로 현재 DB를 덮어씁니다. 계속하시겠습니까?") },
+                    confirmButton = {
+                        Button(onClick = {
+                            val target = selectedBackupFile
+                            showRestoreConfirm = false
+                            if (target != null) {
+                                isLoading = true
+                                loadingMessage = "백업에서 복원 중입니다..."
+                                scope.launch {
+                                    val ok = withContext(Dispatchers.IO) {
+                                        LocalFileManager.restoreDatabaseFromZip(target)
+                                    }
+                                    isLoading = false
+                                    restoreResultText = if (ok) {
+                                        "복원이 완료되었습니다.\n" + target.absolutePath
+                                    } else {
+                                        "복원 실패: 오류가 발생했습니다."
+                                    }
+                                    showRestoreResult = true
+                                    if (ok) {
+                                        // 복원 성공 시, 파일 기반 모델을 다시 초기화하여 최신 상태를 반영
+                                        withContext(Dispatchers.IO) {
+                                            LocalFileManager.load()
+                                        }
+                                        // UI 갱신 트리거 증가 (사용자 목록 등 다시 읽기)
+                                        externalReloadTrigger++
+                                    }
+                                }
+                            }
+                        }) { Text("복원") }
+                    },
+                    dismissButton = {
+                        Button(onClick = { showRestoreConfirm = false }) { Text("취소") }
+                    }
+                )
+            }
+
+            // 복원 결과 다이얼로그
+            if (showRestoreResult) {
+                AlertDialog(
+                    onDismissRequest = { showRestoreResult = false },
+                    title = { Text("복원 결과") },
+                    text = { Text(restoreResultText) },
+                    confirmButton = {
+                        Button(onClick = { showRestoreResult = false }) { Text("확인") }
+                    }
+                )
+            }
 
             // 엑셀 가져오기 결과 다이얼로그
             if (showImportResult) {

@@ -13,6 +13,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import java.util.zip.ZipInputStream
 
 /**
  * 로컬 파일 관리자
@@ -1133,6 +1134,57 @@ object LocalFileManager {
                     println("[DEBUG] 오래된 백업 파일 삭제: ${file.name}")
                 }
             }
+        }
+    }
+
+    /**
+     * 백업 zip 파일로부터 DB를 복원합니다.
+     * - 대상 경로: DB 루트 (vehicleModel.txt 상위 디렉터리)
+     * - zip-slip 보호 적용
+     * - 기존 파일을 덮어쓰기(존재하지 않는 파일은 새로 생성)
+     */
+    fun restoreDatabaseFromZip(zipFile: File): Boolean {
+        return try {
+            if (!zipFile.exists() || !zipFile.isFile) {
+                println("[ERROR] 복원 실패: zip 파일이 존재하지 않음: ${zipFile.absolutePath}")
+                return false
+            }
+            val dbRoot = File(fileVehicleModel).parentFile
+            if (!dbRoot.exists()) {
+                dbRoot.mkdirs()
+            }
+            val destCanonical = dbRoot.canonicalFile
+            FileInputStream(zipFile).use { fis ->
+                ZipInputStream(fis).use { zis ->
+                    var entry = zis.nextEntry
+                    while (entry != null) {
+                        val outFile = File(dbRoot, entry.name)
+                        val outCanonical = outFile.canonicalFile
+                        // zip-slip 방지: 대상 디렉터리 경로 밖으로 벗어나는지 체크
+                        if (!outCanonical.path.startsWith(destCanonical.path + File.separator) && outCanonical != destCanonical) {
+                            throw SecurityException("Zip entry escapes target dir: ${entry.name}")
+                        }
+                        if (entry.isDirectory) {
+                            outFile.mkdirs()
+                        } else {
+                            outFile.parentFile?.mkdirs()
+                            FileOutputStream(outFile).use { fos ->
+                                zis.copyTo(fos)
+                            }
+                        }
+                        zis.closeEntry()
+                        entry = zis.nextEntry
+                    }
+                }
+            }
+            if (DEBUG_LOG) {
+                println("[DEBUG] 복원 완료: ${zipFile.name} -> ${destCanonical.path}")
+            }
+            true
+        } catch (e: Exception) {
+            println("[ERROR] 복원 중 오류: ${e.message}")
+            e.printStackTrace()
+            false
         }
     }
 }
