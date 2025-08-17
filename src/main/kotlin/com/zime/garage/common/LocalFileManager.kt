@@ -1,7 +1,14 @@
 package com.zime.garage.common
 
 import com.zime.garage.common.Content.DEBUG_LOG
-import com.zime.garage.db.viewModel.*
+import com.zime.garage.ui.data.model.EngineModel
+import com.zime.garage.ui.data.model.ImprovementModel
+import com.zime.garage.ui.data.model.Items2Model
+import com.zime.garage.ui.data.model.Items3Model
+import com.zime.garage.ui.data.model.ItemsModel
+import com.zime.garage.ui.data.model.VehicleFormatModel
+import com.zime.garage.ui.data.model.VehicleModelModel
+import com.zime.garage.ui.record.model.UserModel
 import com.zime.garage.utils.Util
 import com.zime.garage.utils.Util.Companion.getDatabasePath
 import kotlinx.coroutines.runBlocking

@@ -1,6 +1,6 @@
 package com.zime.garage
 
-import com.zime.garage.common.ExcelUserRecordImporter
+import com.zime.garage.ui.excel.ExcelUserRecordImporter
 import com.zime.garage.common.LocalFileManager
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.junit.jupiter.api.AfterEach

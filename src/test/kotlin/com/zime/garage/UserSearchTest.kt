@@ -5,9 +5,24 @@ import org.junit.jupiter.api.Test
 
 class UserSearchTest {
     private val sampleUsers = listOf(
-        UserInfo(name = "홍길동", phoneNumber = "010-1234-5678", carNumber = "12가3456", registrationDate = "2025-01-01"),
-        UserInfo(name = "Kim Hana", phoneNumber = "+82 10 9999 8888", carNumber = "33나7777", registrationDate = "2025-02-01"),
-        UserInfo(name = "lee", phoneNumber = "01012345678", carNumber = "88다1111", registrationDate = "2025-03-01")
+        UserInfo(
+            name = "홍길동",
+            phoneNumber = "010-1234-5678",
+            carNumber = "12가3456",
+            registrationDate = "2025-01-01"
+        ),
+        UserInfo(
+            name = "Kim Hana",
+            phoneNumber = "+82 10 9999 8888",
+            carNumber = "33나7777",
+            registrationDate = "2025-02-01"
+        ),
+        UserInfo(
+            name = "lee",
+            phoneNumber = "01012345678",
+            carNumber = "88다1111",
+            registrationDate = "2025-03-01"
+        )
     )
 
     @Test

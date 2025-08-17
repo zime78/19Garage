@@ -2,6 +2,7 @@ package com.zime.garage
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -21,14 +22,20 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.*
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.input.pointer.*
-import com.zime.garage.common.ExcelCombinedImporter
-import com.zime.garage.common.ExcelExporter
+import androidx.compose.ui.text.font.FontStyle
+import com.zime.garage.ui.record.UserRecordWindow
+import com.zime.garage.ui.excel.ExcelCombinedImporter
+import com.zime.garage.ui.excel.ExcelExporter
 import com.zime.garage.common.LocalFileManager
 import com.zime.garage.common.ResourceLoader
 import com.zime.garage.utils.Util
 import java.io.File
 import com.zime.garage.extensions.AboutIcon
 import com.zime.garage.extensions.HelpfIcon
+import com.zime.garage.ui.add.ViewUserAdd
+import com.zime.garage.ui.data.DataManagementWindow
+import com.zime.garage.ui.manual.ManualWindow
+import com.zime.garage.ui.version.VersionDialog
 import java.awt.Toolkit.getDefaultToolkit
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
@@ -640,7 +647,7 @@ fun UserInfoItem(userInfo: UserInfo, onClick: (UserInfo) -> Unit) {
                     text = "DB 파일: ${userInfo.dbFileName}",
                     fontSize = 12.sp,
                     color = Color.Blue,
-                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                    fontStyle = FontStyle.Italic
                 )
             }
         }
@@ -780,7 +787,7 @@ fun main() = application {
 
             // 복원 관련 상태
             var showRestoreDialog by remember { mutableStateOf(false) }
-            var selectedBackupFile by remember { mutableStateOf<java.io.File?>(null) }
+            var selectedBackupFile by remember { mutableStateOf<File?>(null) }
             var showRestoreConfirm by remember { mutableStateOf(false) }
             var showRestoreResult by remember { mutableStateOf(false) }
             var restoreResultText by remember { mutableStateOf("") }
@@ -798,7 +805,7 @@ fun main() = application {
                         // 클릭 차단 (시각 효과 제거)
                         .clickable(
                             indication = null,
-                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                            interactionSource = remember { MutableInteractionSource() }
                         ) { /* consume click */ }
                         // 기타 포인터 이벤트(스크롤/드래그 등) 차단
                         .pointerInput(Unit) {
