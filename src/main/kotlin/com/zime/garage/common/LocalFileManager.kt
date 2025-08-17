@@ -21,6 +21,8 @@ import java.io.FileOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import java.util.zip.ZipInputStream
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 /**
  * 로컬 파일 관리자
@@ -198,6 +200,35 @@ object LocalFileManager {
     }
 
     /**
+     * 원자적 파일 쓰기 유틸리티
+     * - 동일 디렉토리의 임시 파일에 먼저 기록한 뒤, ATOMIC_MOVE로 대상 파일로 교체
+     * - 일부 파일시스템에서 ATOMIC_MOVE 미지원 시 REPLACE_EXISTING으로 폴백
+     */
+    private fun writeTextAtomic(targetFile: File, content: String) {
+        try {
+            val target = targetFile.toPath()
+            val dir = target.parent
+            if (dir != null) Files.createDirectories(dir)
+            val tmp = Files.createTempFile(dir, targetFile.name, ".tmp")
+            Files.writeString(tmp, content)
+            try {
+                Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            } catch (e: java.nio.file.AtomicMoveNotSupportedException) {
+                Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING)
+            } catch (e: Exception) {
+                // 이동 실패 시 임시 파일 제거 시도 후 재던짐
+                try { Files.deleteIfExists(tmp) } catch (_: Exception) {}
+                throw e
+            }
+        } catch (e: Exception) {
+            println("[ERROR] 원자적 쓰기 실패(${targetFile.path}): ${e.message}")
+            e.printStackTrace()
+            // 안전상 실패 시 기존 writeText로 최후의 수단 사용
+            try { targetFile.writeText(content) } catch (_: Exception) {}
+        }
+    }
+
+    /**
      * 파일 전체 내용 로그 출력 함수
      * 
      * 지정된 파일의 모든 내용을 한 줄씩 콘솔에 출력합니다.
@@ -269,7 +300,7 @@ object LocalFileManager {
 
             // JSON 파일로 저장
             val newJson = buildJsonArray { arr.forEach { add(it) } }
-            userListFile.writeText(Json.encodeToString(JsonElement.serializer(), newJson))
+            writeTextAtomic(userListFile, Json.encodeToString(JsonElement.serializer(), newJson))
 
             if (DEBUG_LOG) {
                 println("사용자 리스트(JSON)에 추가됨: $newObj")
@@ -360,7 +391,7 @@ object LocalFileManager {
                             }
                         }
                     }
-                    jsonListFile.writeText(Json.encodeToString(JsonElement.serializer(), jsonArray))
+                    writeTextAtomic(jsonListFile, Json.encodeToString(JsonElement.serializer(), jsonArray))
                     // 마이그레이션 후 구 파일 삭제(무시 가능)
                     try { legacyTxtFile.delete() } catch (_: Exception) {}
                     if (DEBUG_LOG) println("[MIGRATE] 변환 완료: ${jsonListFile.path}")
@@ -368,7 +399,7 @@ object LocalFileManager {
                     println("[ERROR] user_list.txt 마이그레이션 실패: ${me.message}")
                     me.printStackTrace()
                     // 실패 시라도 빈 JSON 파일 보장
-                    jsonListFile.writeText("[]")
+                    writeTextAtomic(jsonListFile, "[]")
                 }
                 return
             }
@@ -377,11 +408,11 @@ object LocalFileManager {
                 // 유효한 JSON인지 확인, 비어있으면 []로 초기화
                 val text = jsonListFile.readText()
                 if (text.isBlank()) {
-                    jsonListFile.writeText("[]")
+                    writeTextAtomic(jsonListFile, "[]")
                     if (DEBUG_LOG) println("사용자 리스트 JSON 초기화([]): ${jsonListFile.path}")
                 }
             } else {
-                jsonListFile.writeText("[]")
+                writeTextAtomic(jsonListFile, "[]")
                 if (DEBUG_LOG) {
                     println("사용자 리스트 JSON 파일이 없어 새로 생성([]): ${jsonListFile.path}")
                 }
@@ -401,12 +432,29 @@ object LocalFileManager {
         return try {
             val userListFile = openFile(FileType.USER_LIST) ?: return emptyList()
 
-            // 파일이 없거나 비어 있으면 초기화 보장
-            if (!userListFile.exists() || userListFile.readText().isBlank()) {
+            // 파일이 없으면 초기화 보장, 비어있는 경우는 잠시 후 재시도하여 레이스 회피
+            if (!userListFile.exists()) {
                 initializeUserListFile()
             }
 
-            val text = userListFile.readText().trim()
+            var text = userListFile.readText().trim()
+            if (text.isBlank()) {
+                val lastMod = userListFile.lastModified()
+                var attempts = 0
+                while (attempts < 3 && text.isBlank()) {
+                    try { Thread.sleep(50) } catch (_: InterruptedException) {}
+                    text = userListFile.readText().trim()
+                    attempts++
+                }
+                if (text.isBlank()) {
+                    val now = System.currentTimeMillis()
+                    // 최근에 수정된 빈 파일이면 초기화로 덮어쓰지 않고 빈 리스트 반환을 허용(동시 쓰기 보호)
+                    if (now - lastMod > 1000) {
+                        initializeUserListFile()
+                        text = userListFile.readText().trim()
+                    }
+                }
+            }
 
             val csvLines: List<String> = if (text.isBlank()) {
                 emptyList()
@@ -1177,7 +1225,7 @@ object LocalFileManager {
                     }
                 }
             }
-            listFile.writeText(Json.encodeToString(JsonElement.serializer(), newArr))
+            writeTextAtomic(listFile, Json.encodeToString(JsonElement.serializer(), newArr))
             closeFile(listFile)
 
             // 2) 개별 파일 삭제 옵션 처리

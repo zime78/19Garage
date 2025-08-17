@@ -42,6 +42,8 @@ import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 import kotlinx.serialization.json.*
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 
 
@@ -148,7 +150,17 @@ fun updateUserListFile(validUserLines: List<String>) {
                 }
             }
 
-            userListFile.writeText(Json.encodeToString(JsonElement.serializer(), jsonArray))
+            // 원자적 쓰기: 임시 파일에 기록 후 교체
+            val path = userListFile.toPath()
+            val dir = path.parent
+            if (dir != null) Files.createDirectories(dir)
+            val tmp = Files.createTempFile(dir, userListFile.name, ".tmp")
+            Files.writeString(tmp, Json.encodeToString(JsonElement.serializer(), jsonArray))
+            try {
+                Files.move(tmp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            } catch (e: java.nio.file.AtomicMoveNotSupportedException) {
+                Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING)
+            }
             
             LocalFileManager.closeFile(userListFile)
             println("[DEBUG] 사용자 리스트 파일(JSON) 업데이트 성공: ${validUserLines.size}개 항목")
