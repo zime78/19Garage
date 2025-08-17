@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
@@ -162,15 +163,31 @@ fun UserRecordWindow(userInfo: UserInfo, onClose: () -> Unit) {
                 // 리스트
                 val hiddenIndexes = setOf(2, 15, 16) // 차량번호, 이름, 연락처는 리스트 표시 제외
                 val headersAll = LocalFileManager.USER_RECORD_HEADER.split(",")
-                val headersToShow = headersAll.filterIndexed { idx, _ -> idx !in hiddenIndexes }
+                val actionsAreaWidth = 160.dp
+                val centerAlignIndices = setOf(0, 1, 2, 3, 4, 5, 12, 13, 14)
+                val noColumnWidth = 40.dp
+                val modelColumnWidth = 40.dp
                 if (records.isEmpty()) {
                     // 헤더 표시
                     Row(
-                        modifier = Modifier.fillMaxWidth().background(Color(0xFFEFEFEF)).padding(8.dp)
+                        modifier = Modifier.fillMaxWidth().background(Color(0xFFEFEFEF)).padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        headersToShow.forEach { h ->
-                            Text(h, modifier = Modifier.weight(1f))
+                        Row(modifier = Modifier.weight(1f)) {
+                            headersAll.forEachIndexed { idx, h ->
+                                if (idx !in hiddenIndexes) {
+                                    val ta = if (idx in centerAlignIndices) TextAlign.Center else TextAlign.Start
+                                    if (idx == 0 || idx == 12) {
+                                        Text(h, modifier = Modifier.width(noColumnWidth), textAlign = ta)
+                                    } else if (idx == 3){
+                                        Text(h, modifier = Modifier.width(modelColumnWidth), textAlign = ta)
+                                    } else {
+                                        Text(h, modifier = Modifier.weight(1f), textAlign = ta)
+                                    }
+                                }
+                            }
                         }
+                        Box(modifier = Modifier.width(actionsAreaWidth))
                     }
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("리스트 목록이 없습니다", color = Color.Gray)
@@ -178,11 +195,24 @@ fun UserRecordWindow(userInfo: UserInfo, onClose: () -> Unit) {
                 } else {
                     // 헤더 표시
                     Row(
-                        modifier = Modifier.fillMaxWidth().background(Color(0xFFEFEFEF)).padding(8.dp)
+                        modifier = Modifier.fillMaxWidth().background(Color(0xFFEFEFEF)).padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        headersToShow.forEach { h ->
-                            Text(h, modifier = Modifier.weight(1f))
+                        Row(modifier = Modifier.weight(1f)) {
+                            headersAll.forEachIndexed { idx, h ->
+                                if (idx !in hiddenIndexes) {
+                                    val ta = if (idx in centerAlignIndices) TextAlign.Center else TextAlign.Start
+                                    if (idx == 0 || idx == 12) {
+                                        Text(h, modifier = Modifier.width(noColumnWidth), textAlign = ta)
+                                    } else if (idx == 3){
+                                        Text(h, modifier = Modifier.width(modelColumnWidth), textAlign = ta)
+                                    } else {
+                                        Text(h, modifier = Modifier.weight(1f), textAlign = ta)
+                                    }
+                                }
+                            }
                         }
+                        Box(modifier = Modifier.width(actionsAreaWidth))
                     }
 
                     //분리선
@@ -191,33 +221,46 @@ fun UserRecordWindow(userInfo: UserInfo, onClose: () -> Unit) {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         itemsIndexed(records) { index, row ->
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp, horizontal = 4.dp),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp, horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 val cells = row + List(maxOf(0, 18 - row.size)) { "" } // ensure 18 columns
-                                cells.forEachIndexed { idx, cell ->
-                                    if (idx !in hiddenIndexes) {
-                                        Text(cell, modifier = Modifier.weight(1f))
+                                // 데이터 영역: 헤더와 동일하게 weight(1f) 영역 내에서 각 셀을 균등 가중치로 배치
+                                Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                                    cells.forEachIndexed { idx, cell ->
+                                        if (idx !in hiddenIndexes) {
+                                            val ta = if (idx in centerAlignIndices) TextAlign.Center else TextAlign.Start
+                                            if (idx == 0 || idx == 12) {
+                                                Text(cell, modifier = Modifier.width(noColumnWidth), textAlign = ta)
+                                            } else if (idx == 3){
+                                                Text(cell, modifier = Modifier.width(modelColumnWidth), textAlign = ta)
+                                            } else {
+                                                Text(cell, modifier = Modifier.weight(1f), textAlign = ta)
+                                            }
+                                        }
                                     }
                                 }
-                                // 상단 탭의 "수정/삭제" 토글이 활성화된 경우에만 행의 액션 버튼 표시
-                                if (showRowActions) {
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    OutlinedButton(onClick = {
-                                        // 수정 버튼: 현재 행 정보를 다이얼로그로 전달
-                                        val no = records.getOrNull(index)?.getOrNull(0)?.toIntOrNull()
-                                        editIndex = if (no != null && no > 0) no - 1 else index
-                                        editRow = records.getOrNull(index)
-                                        showEditDialog = true
-                                    }) {
-                                        Text("수정")
-                                    }
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    OutlinedButton(onClick = {
-                                        deleteIndex = index
-                                        showDeleteConfirm = true
-                                    }) {
-                                        Text("삭제")
+                                // 액션 영역: 고정폭을 유지하여 헤더와 열 정렬 일치
+                                Box(modifier = Modifier.width(actionsAreaWidth)) {
+                                    if (showRowActions) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            OutlinedButton(onClick = {
+                                                // 수정 버튼: 현재 행 정보를 다이얼로그로 전달
+                                                val no = records.getOrNull(index)?.getOrNull(0)?.toIntOrNull()
+                                                editIndex = if (no != null && no > 0) no - 1 else index
+                                                editRow = records.getOrNull(index)
+                                                showEditDialog = true
+                                            }) {
+                                                Text("수정")
+                                            }
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            OutlinedButton(onClick = {
+                                                deleteIndex = index
+                                                showDeleteConfirm = true
+                                            }) {
+                                                Text("삭제")
+                                            }
+                                        }
                                     }
                                 }
                             }
