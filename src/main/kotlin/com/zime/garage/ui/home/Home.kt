@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.zime.garage.*
 import com.zime.garage.common.ResourceLoader
+import com.zime.garage.common.LocalFileManager
 import com.zime.garage.ui.add.ViewUserAdd
 import com.zime.garage.ui.home.type.ButtonState
 import com.zime.garage.ui.home.viewmodel.HomeViewModel
@@ -257,6 +258,10 @@ fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0
 
     var searchQuery by remember { mutableStateOf("") }
 
+    // 삭제 확인 다이얼로그 상태
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var userToDelete by remember { mutableStateOf<UserInfo?>(null) }
+
     val filteredUsers = remember(users, searchQuery) {
         filterUsers(users, searchQuery)
     }
@@ -382,10 +387,17 @@ fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0
             ) {
                 // 실제 사용자 정보를 항목으로 표시합니다.
                 items(sortedUsers) { userInfo ->
-                    UserInfoItem(userInfo = userInfo, onClick = {
-                        println("[DEBUG] 사용자 클릭: $it")
-                        selectedUser = it
-                    })
+                    UserInfoItem(
+                        userInfo = userInfo,
+                        onClick = {
+                            println("[DEBUG] 사용자 클릭: $it")
+                            selectedUser = it
+                        },
+                        onDelete = {
+                            userToDelete = it
+                            showDeleteDialog = true
+                        }
+                    )
                 }
 
                 // 사용자가 없을 때 안내 메시지 표시
@@ -431,6 +443,40 @@ fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0
         }
     }
 
+    // 삭제 확인 다이얼로그
+    if (showDeleteDialog) {
+        val target = userToDelete
+        if (target != null) {
+            AlertDialog(
+                onDismissRequest = {
+                    showDeleteDialog = false
+                    userToDelete = null
+                },
+                title = { Text("삭제 확인") },
+                text = { Text("삭제 시 해당 고객의 모든 데이터가 삭제됩니다. 계속하시겠습니까?\n(${target.name} / ${target.carNumber})") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val ok = LocalFileManager.removeUser(target.carNumber, deleteDb = true, deleteRecords = true)
+                        println("[INFO] removeUser(${target.carNumber}) => $ok")
+                        showDeleteDialog = false
+                        userToDelete = null
+                        refreshUserList()
+                    }) {
+                        Text("삭제")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        showDeleteDialog = false
+                        userToDelete = null
+                    }) { Text("취소") }
+                }
+            )
+        } else {
+            showDeleteDialog = false
+        }
+    }
+
     selectedUser?.let {
         UserRecordWindow(userInfo = it, onClose = { selectedUser = null })
     }
@@ -438,7 +484,7 @@ fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0
 
 
 @Composable
-fun UserInfoItem(userInfo: UserInfo, onClick: (UserInfo) -> Unit) {
+fun UserInfoItem(userInfo: UserInfo, onClick: (UserInfo) -> Unit, onDelete: (UserInfo) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -477,6 +523,16 @@ fun UserInfoItem(userInfo: UserInfo, onClick: (UserInfo) -> Unit) {
                     color = Color.Blue,
                     fontStyle = FontStyle.Italic
                 )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            OutlinedButton(onClick = { onDelete(userInfo) }, colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)) {
+                Text("삭제")
             }
         }
     }

@@ -1076,10 +1076,11 @@ object LocalFileManager {
 
     /**
      * 사용자 리스트 파일 삭제 함수
+     * 외부에서 호출 가능하도록 공개 메서드로 제공
      * 
      * @return 삭제 성공 여부
      */
-    private fun deleteUserListFile(): Boolean {
+    fun deleteUserListFile(): Boolean {
         return try {
             val userListFile = openFile(FileType.USER_LIST)
             if (userListFile != null && userListFile.exists()) {
@@ -1128,6 +1129,68 @@ object LocalFileManager {
             println("[ERROR] 사용자 DB 파일 삭제 오류: ${e.message}")
             e.printStackTrace()
             false
+        }
+    }
+
+    /**
+     * 개별 사용자 기록(JSON) 파일 삭제 함수
+     * @param vehicleNumber 차량 번호
+     */
+    private fun deleteUserRecordDatabase(vehicleNumber: String): Boolean {
+        return try {
+            val path = String.format(fileUserRecord, vehicleNumber)
+            val file = File(path)
+            if (file.exists()) {
+                val deleted = file.delete()
+                if (deleted && DEBUG_LOG) {
+                    println("[DEBUG] 사용자 기록 파일 삭제 완료: ${file.name}")
+                }
+                deleted
+            } else {
+                if (DEBUG_LOG) println("[DEBUG] 사용자 기록 파일이 존재하지 않음: ${file.name}")
+                true
+            }
+        } catch (e: Exception) {
+            println("[ERROR] 사용자 기록 파일 삭제 오류: ${e.message}")
+            e.printStackTrace()
+            false
+        }
+    }
+
+    /**
+     * 특정 차량번호에 해당하는 고객을 삭제합니다.
+     * - user_list.json에서 해당 항목 제거 후 저장
+     * - 옵션에 따라 개인 DB 및 기록 파일 삭제
+     */
+    fun removeUser(vehicleNumber: String, deleteDb: Boolean = true, deleteRecords: Boolean = true): Boolean {
+        try {
+            // 1) user_list.json에서 제거
+            val listFile = openFile(FileType.USER_LIST) ?: return false
+            val raw = listFile.readText().ifBlank { "[]" }
+            val arr = Json.parseToJsonElement(raw).jsonArray
+            val newArr = buildJsonArray {
+                arr.forEach { el ->
+                    val obj = el.jsonObject
+                    val vn = obj["vehicleNumber"]?.jsonPrimitive?.contentOrNull ?: ""
+                    if (!vn.equals(vehicleNumber, ignoreCase = true)) {
+                        add(obj)
+                    }
+                }
+            }
+            listFile.writeText(Json.encodeToString(JsonElement.serializer(), newArr))
+            closeFile(listFile)
+
+            // 2) 개별 파일 삭제 옵션 처리
+            var ok = true
+            if (deleteDb) ok = ok && deleteUserDatabase(vehicleNumber)
+            if (deleteRecords) ok = ok && deleteUserRecordDatabase(vehicleNumber)
+
+            if (DEBUG_LOG) println("[INFO] 사용자 삭제 완료: $vehicleNumber (ok=$ok)")
+            return ok
+        } catch (e: Exception) {
+            println("[ERROR] 사용자 삭제 중 오류: ${e.message}")
+            e.printStackTrace()
+            return false
         }
     }
 

@@ -333,8 +333,12 @@ fun main() = application {
                                     scope.launch {
                                         try {
                                             withContext(Dispatchers.IO) {
-                                                // 백업 및 초기화는 IO 스레드에서 실행
+                                                // 백업 IO 스레드에서 실행
                                                 LocalFileManager.backupDatabase()
+                                            }
+
+                                            withContext(Dispatchers.IO) {
+                                                // 초기화는 IO 스레드에서 실행
                                                 LocalFileManager.initializeFiles()
                                             }
                                             val result = withContext(Dispatchers.IO) {
