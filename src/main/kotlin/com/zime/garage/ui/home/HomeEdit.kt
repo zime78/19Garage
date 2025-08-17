@@ -29,21 +29,6 @@ fun HomeEdit(
     val nameState = remember(target) { mutableStateOf(target.name) }
     val contactState = remember(target) { mutableStateOf(target.phoneNumber) }
 
-    // 비고 초기 로드는 user_list.json에서 가져오기 시도
-    val remarksInitial = remember(target) {
-        try {
-            val file = LocalFileManager.openFile(LocalFileManager.FileType.USER_LIST)
-            val raw = file?.readText()?.trim().orEmpty()
-            if (raw.startsWith("[")) {
-                val arr = Json.parseToJsonElement(raw).jsonArray
-                val obj = arr.firstOrNull { el ->
-                    el.jsonObject["vehicleNumber"]?.jsonPrimitive?.contentOrNull.equals(target.carNumber, true)
-                }?.jsonObject
-                obj?.get("remarks")?.jsonPrimitive?.contentOrNull ?: ""
-            } else ""
-        } catch (e: Exception) { "" }
-    }
-    val remarksState = remember(target) { mutableStateOf(remarksInitial) }
 
     var showDatePickerDialog by remember { mutableStateOf(false) }
     val selectedDate = remember { mutableStateOf(Date()) }
@@ -73,7 +58,6 @@ fun HomeEdit(
             vehicleNumber = vehicleNumberState,
             name = nameState,
             contact = contactState,
-            remarks = remarksState,
             onDateClick = { showDatePickerDialog = true },
             externalVehicleNumberError = vehicleNumberDuplicateError,
             externalVehicleNumberErrorMessage = vehicleNumberDuplicateErrorMessage,
@@ -111,7 +95,6 @@ fun HomeEdit(
                                     put("registrationDate", dateState.value)
                                     put("contact", contactState.value)
                                     put("name", nameState.value)
-                                    put("remarks", remarksState.value)
                                     put("dbName", "user_${newVN}.db")
                                 }
                             )
@@ -153,7 +136,6 @@ fun HomeEdit(
                     date = dateState.value,
                     name = nameState.value,
                     contact = contactState.value,
-                    remarks = remarksState.value,
                     dbName = "user_${newVN}.db"
                 )
                 if (!saved) {

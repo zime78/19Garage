@@ -33,22 +33,99 @@ import java.util.*
 @Composable
 @Preview
 fun ViewUserAddPreview() {
-    // 미리보기용 상태 정의
+    // 미리보기용 상태 정의 (비고 제거)
     val date = remember { mutableStateOf("2023-05-01") }
     val vehicleNumber = remember { mutableStateOf("12가 3456") }
     val name = remember { mutableStateOf("홍길동") }
     val contact = remember { mutableStateOf("010-1234-5678") }
-    val remarks = remember { mutableStateOf("비고 내용") }
+    var showPreview by remember { mutableStateOf(true) }
 
     MaterialTheme {
         Surface {
-            UserAddContent(
-                date = date,
-                vehicleNumber = vehicleNumber,
-                name = name,
-                contact = contact,
-                remarks = remarks
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                // 날짜 / 차량번호
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    TextField(
+                        value = date.value,
+                        onValueChange = {},
+                        label = { Text("날짜(기본 오늘날짜)") },
+                        readOnly = true,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 5.dp)
+                    )
+
+                    TextField(
+                        value = vehicleNumber.value,
+                        onValueChange = {
+                            val trimmedValue = it.trim()
+                            if (trimmedValue.length <= 10) {
+                                vehicleNumber.value = trimmedValue
+                            }
+                        },
+                        label = { Text("차량 번호 *") },
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 5.dp)
+                    )
+                }
+
+                // 이름 / 연락처
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    TextField(
+                        value = name.value,
+                        onValueChange = {
+                            val trimmedValue = it.trim()
+                            if (trimmedValue.length < 10) {
+                                name.value = trimmedValue
+                            }
+                        },
+                        label = { Text("이름 *") },
+                        modifier = Modifier.weight(1f).padding(end = 5.dp)
+                    )
+
+                    TextField(
+                        value = contact.value,
+                        onValueChange = {
+                            val trimmedValue = it.trim()
+                            if (trimmedValue.length <= 15 && trimmedValue.all { ch -> ch.isDigit() || ch == '-' }) {
+                                contact.value = trimmedValue
+                            }
+                        },
+                        label = { Text("연락처 *") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        modifier = Modifier.weight(1f).padding(start = 5.dp)
+                    )
+                }
+
+                // 미리보기 토글 버튼
+                Button(
+                    onClick = { showPreview = !showPreview },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                ) {
+                    Text(if (showPreview) "미리보기 숨기기" else "미리보기 보기")
+                }
+
+                // 미리보기 카드(비고 제외)
+                if (showPreview) {
+                    PreviewCardNoRemarks(
+                        date = date.value,
+                        vehicleNumber = vehicleNumber.value,
+                        name = name.value,
+                        contact = contact.value
+                    )
+                }
+            }
         }
     }
 }
@@ -65,7 +142,6 @@ fun UserAddContent(
     vehicleNumber: MutableState<String>,
     name: MutableState<String>,
     contact: MutableState<String>,
-    remarks: MutableState<String>,
     onDateClick: () -> Unit = {},
     onAddClick: () -> Unit = {},
     onCloseClick: () -> Unit = {},
@@ -224,14 +300,6 @@ fun UserAddContent(
             )
         }
 
-        // 비고
-        TextField(
-            value = remarks.value,
-            onValueChange = { remarks.value = it },
-            label = { Text("비고") },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)
-        )
-
         // 미리보기 토글 버튼
         Button(
             onClick = { showPreview = !showPreview },
@@ -247,7 +315,6 @@ fun UserAddContent(
                 vehicleNumber = vehicleNumber.value,
                 name = name.value,
                 contact = contact.value,
-                remarks = remarks.value
             )
         }
 
@@ -328,7 +395,6 @@ fun PreviewCard(
     vehicleNumber: String,
     name: String,
     contact: String,
-    remarks: String
 ) {
     Card(
         modifier = Modifier
@@ -370,13 +436,6 @@ fun PreviewCard(
             PreviewItem(
                 label = "연락처",
                 value = contact.ifEmpty { "입력되지 않음" }
-            )
-            
-            // 비고 정보
-            PreviewItem(
-                label = "비고",
-                value = remarks.ifEmpty { "입력되지 않음" },
-                isLast = true
             )
         }
     }
@@ -476,8 +535,7 @@ fun ViewUserAdd(onCloseCallback: () -> Unit) {
             vehicleNumber = vehicleNumber,
             name = name,
             contact = contact,
-            remarks = remarks,
-            onDateClick = { 
+            onDateClick = {
                 showDatePickerDialog = true
             },
             externalVehicleNumberError = vehicleNumberDuplicateError,
@@ -524,5 +582,51 @@ fun ViewUserAdd(onCloseCallback: () -> Unit) {
             },
             onCloseClick = onCloseCallback
         )
+    }
+}
+
+@Composable
+fun PreviewCardNoRemarks(
+    date: String,
+    vehicleNumber: String,
+    name: String,
+    contact: String
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        elevation = 4.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // 미리보기 제목
+            Text(
+                text = "입력 정보 미리보기",
+                style = MaterialTheme.typography.h6,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 12.dp),
+                textAlign = TextAlign.Center
+            )
+
+            PreviewItem(
+                label = "날짜",
+                value = date.ifEmpty { "입력되지 않음" }
+            )
+            PreviewItem(
+                label = "차량번호",
+                value = vehicleNumber.ifEmpty { "입력되지 않음" }
+            )
+            PreviewItem(
+                label = "이름",
+                value = name.ifEmpty { "입력되지 않음" }
+            )
+            PreviewItem(
+                label = "연락처",
+                value = contact.ifEmpty { "입력되지 않음" },
+                isLast = true
+            )
+        }
     }
 }

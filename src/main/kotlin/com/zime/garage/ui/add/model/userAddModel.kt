@@ -96,7 +96,6 @@ class UserAddModel(): BaseModel() {
                 date = registrationDate,
                 name = userAddData.name,
                 contact = userAddData.contact,
-                remarks = userAddData.remarks,
                 dbName = userAddData.dbName
             )
 

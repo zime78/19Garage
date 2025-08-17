@@ -85,7 +85,6 @@ class UserListDeleteTest {
             date = "2025-01-01",
             name = "테스트",
             contact = "010-0000-0000",
-            remarks = "비고",
             dbName = "user_${vehicle}.db"
         )
         assertTrue(saved, "테스트용 사용자 DB 저장에 성공해야 합니다")

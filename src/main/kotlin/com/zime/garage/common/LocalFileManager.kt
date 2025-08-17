@@ -498,7 +498,6 @@ object LocalFileManager {
      * @param date 등록 날짜
      * @param name 이름
      * @param contact 연락처
-     * @param remarks 비고
      * @param dbName 데이터베이스 파일명
      * @return 저장 성공 여부
      */
@@ -508,7 +507,6 @@ object LocalFileManager {
         date: String,
         name: String,
         contact: String,
-        remarks: String,
         dbName: String
     ): Boolean {
         return try {
@@ -525,7 +523,6 @@ object LocalFileManager {
                 put("registrationDate", date)
                 put("name", name)
                 put("contact", contact)
-                put("remarks", remarks)
                 put("dbName", dbName)
                 put("createdAt", SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.KOREA).format(Date()))
             }
