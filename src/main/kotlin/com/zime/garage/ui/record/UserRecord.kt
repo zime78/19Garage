@@ -112,8 +112,8 @@ fun UserRecordWindow(userInfo: UserInfo, onClose: () -> Unit) {
                             Text("추가")
                         }
                         // 상단 탭의 "수정/삭제" 토글 버튼: 클릭 시 각 행의 수정/삭제 버튼 표시
-                        OutlinedButton(onClick = { showRowActions = !showRowActions }) {
-                            Text("수정/삭제\n 표시 ")
+                        OutlinedButton(onClick = { showRowActions = !showRowActions }, modifier = Modifier.background(Color(0xFFFFE4E1))) {
+                            Text("수정/삭제 표시")
                         }
                         // 엑셀 가져오기 버튼: 파일 선택 후 가져오기 수행
                         OutlinedButton(onClick = {
