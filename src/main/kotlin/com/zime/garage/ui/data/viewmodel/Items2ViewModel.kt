@@ -1,15 +1,16 @@
-package com.zime.garage.ui.data.model
+package com.zime.garage.ui.data.viewmodel
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.zime.garage.base.BaseViewModel
+import com.zime.garage.ui.data.model.Items2Model
 
 /**
- * MVVM ViewModel for Items3 management.
- * Wraps Items3Model (data layer) and exposes Compose-friendly state.
+ * MVVM ViewModel for Items2 management.
+ * Wraps Items2Model (data layer) and exposes Compose-friendly state.
  */
-class Items3ViewModel : BaseViewModel {
-    private val model = Items3Model()
+class Items2ViewModel : BaseViewModel {
+    private val model = Items2Model()
 
     // Observable state for UI
     val classifications: SnapshotStateList<String> = mutableStateListOf()

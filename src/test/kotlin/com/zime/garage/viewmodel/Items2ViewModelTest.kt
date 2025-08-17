@@ -2,7 +2,7 @@ package com.zime.garage.viewmodel
 
 import com.zime.garage.common.LocalFileManager
 import com.zime.garage.ui.data.model.Items2Model
-import com.zime.garage.ui.data.model.Items2ViewModel
+import com.zime.garage.ui.data.viewmodel.Items2ViewModel
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.*
 

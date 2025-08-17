@@ -13,8 +13,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.zime.garage.ui.data.model.EngineModel
 import com.zime.garage.ui.data.model.ImprovementModel
-import com.zime.garage.ui.data.model.Items2ViewModel
-import com.zime.garage.ui.data.model.Items3ViewModel
+import com.zime.garage.ui.data.viewmodel.Items2ViewModel
+import com.zime.garage.ui.data.viewmodel.Items3ViewModel
 import com.zime.garage.ui.data.model.ItemsModel
 import com.zime.garage.ui.data.model.VehicleFormatModel
 import com.zime.garage.ui.data.model.VehicleModelModel
