@@ -18,10 +18,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.rememberWindowState
+import com.zime.garage.common.Material3DatePicker
+import kotlinx.serialization.json.*
 import com.zime.garage.*
 import com.zime.garage.common.ResourceLoader
 import com.zime.garage.common.LocalFileManager
 import com.zime.garage.ui.add.ViewUserAdd
+import com.zime.garage.ui.add.UserAddContent
 import com.zime.garage.ui.home.type.ButtonState
 import com.zime.garage.ui.home.viewmodel.HomeViewModel
 import com.zime.garage.ui.home.type.UserSortField
@@ -247,6 +252,7 @@ fun ReloadConfirmDialog(
 fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0) {
     val listState = rememberLazyListState() // LazyListState를 사용하여 스크롤 상태를 기억합니다.
     var selectedUser by remember { mutableStateOf<UserInfo?>(null) }
+    var editingUser by remember { mutableStateOf<UserInfo?>(null) }
 
     // 실제 사용자 데이터를 LocalFileManager에서 로드
     var users by remember { mutableStateOf(loadUsersFromFile()) }
@@ -396,6 +402,9 @@ fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0
                         onDelete = {
                             userToDelete = it
                             showDeleteDialog = true
+                        },
+                        onEdit = {
+                            editingUser = it
                         }
                     )
                 }
@@ -480,11 +489,23 @@ fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0
     selectedUser?.let {
         UserRecordWindow(userInfo = it, onClose = { selectedUser = null })
     }
+
+    // 편집 창: editingUser가 설정되면 수정 윈도우 표시
+    editingUser?.let { target ->
+        HomeEdit(
+            target = target,
+            onClose = { editingUser = null },
+            onSaved = {
+                editingUser = null
+                refreshUserList()
+            }
+        )
+    }
 }
 
 
 @Composable
-fun UserInfoItem(userInfo: UserInfo, onClick: (UserInfo) -> Unit, onDelete: (UserInfo) -> Unit) {
+fun UserInfoItem(userInfo: UserInfo, onClick: (UserInfo) -> Unit, onDelete: (UserInfo) -> Unit, onEdit: (UserInfo) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -531,6 +552,10 @@ fun UserInfoItem(userInfo: UserInfo, onClick: (UserInfo) -> Unit, onDelete: (Use
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
         ) {
+            OutlinedButton(onClick = { onEdit(userInfo) }) {
+                Text("수정")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
             OutlinedButton(onClick = { onDelete(userInfo) }, colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)) {
                 Text("삭제")
             }

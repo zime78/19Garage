@@ -70,7 +70,8 @@ fun UserAddContent(
     onAddClick: () -> Unit = {},
     onCloseClick: () -> Unit = {},
     externalVehicleNumberError: Boolean = false,
-    externalVehicleNumberErrorMessage: String = ""
+    externalVehicleNumberErrorMessage: String = "",
+    actionButtonText: String = "추가"
 ) {
     val scrollState = rememberScrollState()
     // 미리보기 표시 상태 관리
@@ -304,7 +305,7 @@ fun UserAddContent(
                 },
                 modifier = Modifier.weight(1f).padding(end = 8.dp)
             ) {
-                Text("추가")
+                Text(actionButtonText)
             }
 
             Button(
