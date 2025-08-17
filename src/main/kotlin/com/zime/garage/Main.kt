@@ -827,21 +827,21 @@ fun main() = application {
             // 메뉴바
             MenuBar {
                 Menu("파일", mnemonic = 'F') {
-                    Item("파일 보내기",
+                    Item("엑셀 파일 보내기",
                         onClick = {
                             try {
                                 val chooser = JFileChooser().apply {
                                     dialogTitle = "엑셀로 내보내기(.xlsx)"
                                     isMultiSelectionEnabled = false
                                     fileFilter = FileNameExtensionFilter("Excel 파일 (*.xlsx)", "xlsx")
-                                    selectedFile = java.io.File(ExcelExporter.defaultFileName("data"))
+                                    selectedFile = File(ExcelExporter.defaultFileName("data"))
                                 }
                                 val resultCode = chooser.showSaveDialog(null)
                                 importResultTitle = "엑셀로 내보내기"
                                 if (resultCode == JFileChooser.APPROVE_OPTION) {
                                     var file = chooser.selectedFile
                                     if (!file.name.lowercase().endsWith(".xlsx")) {
-                                        file = java.io.File(file.parentFile, file.name + ".xlsx")
+                                        file = File(file.parentFile, file.name + ".xlsx")
                                     }
                                     val result = ExcelExporter.exportAllToExcel(file)
                                     importResultText = result.toString()

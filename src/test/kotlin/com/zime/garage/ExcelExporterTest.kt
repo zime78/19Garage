@@ -78,8 +78,8 @@ class ExcelExporterTest {
                 assertEquals(2, sheet.physicalNumberOfRows)
                 val headerRow = sheet.getRow(0)
                 val expectedHeader = listOf(
-                    "날짜", "차량번호", "모델", "국가", "엔진", "연식", "주행거리",
-                    "분류1", "분류2", "분류3", "품목", "수량", "단가", "이름", "연락처", "비고"
+                    "날짜", "차량번호", "모델", "국가형식(유럽/북미/mhd)", "엔진", "연식", "주행거리",
+                    "분류1", "분류2", "분류3", "품목", "수량", "단가", "금액", "이름", "연락처", "비고"
                 )
                 expectedHeader.forEachIndexed { idx, title ->
                     assertEquals(title, headerRow.getCell(idx).stringCellValue)
@@ -90,6 +90,7 @@ class ExcelExporterTest {
                 assertEquals("오일", row.getCell(10).stringCellValue)
                 assertEquals("2", row.getCell(11).stringCellValue)
                 assertEquals("15000", row.getCell(12).stringCellValue)
+                assertEquals("30000", row.getCell(13).stringCellValue)
             }
         }
     }
@@ -123,9 +124,9 @@ class ExcelExporterTest {
                 val row = sheet.getRow(1)
                 assertEquals(date, row.getCell(0).stringCellValue)
                 assertEquals(vehicle, row.getCell(1).stringCellValue)
-                assertEquals(name, row.getCell(13).stringCellValue)
-                assertEquals(contact, row.getCell(14).stringCellValue)
-                assertEquals(remarks, row.getCell(15).stringCellValue)
+                assertEquals(name, row.getCell(14).stringCellValue)
+                assertEquals(contact, row.getCell(15).stringCellValue)
+                assertEquals(remarks, row.getCell(16).stringCellValue)
             }
         }
     }

@@ -9,7 +9,7 @@ import java.util.*
 /**
  * 현재 저장된 사용자 리스트 및 차량별 작업기록을 엑셀(.xlsx)로 내보내는 유틸리티
  * - 포맷: 단일 시트("data"), 한국어 헤더 사용 (Importer 헤더 별칭과 호환)
- * - 헤더: 날짜, 차량번호, 모델, 국가, 엔진, 연식, 주행거리, 분류1, 분류2, 분류3, 품목, 수량, 단가, 이름, 연락처, 비고
+ * - 헤더: 날짜, 차량번호, 모델, 국가형식(유럽/북미/mhd), 엔진, 연식, 주행거리, 분류1, 분류2, 분류3, 품목, 수량, 단가, 금액, 이름, 연락처, 비고
  * - 사용자에 작업기록이 없으면 사용자 정보만 1행 출력
  */
 object ExcelExporter {
@@ -36,7 +36,7 @@ object ExcelExporter {
 
     private val header = listOf(
         "날짜", "차량번호", "모델", "국가형식(유럽/북미/mhd)", "엔진", "연식", "주행거리",
-        "분류1", "분류2", "분류3", "품목", "수량", "단가", "이름", "연락처", "비고"
+        "분류1", "분류2", "분류3", "품목", "수량", "단가", "금액", "이름", "연락처", "비고"
     )
 
     /**
@@ -98,6 +98,7 @@ object ExcelExporter {
                         item = "",
                         quantity = "",
                         unitPrice = "",
+                        amount = "",
                         name = name,
                         contact = contact,
                         remarks = remarks
@@ -125,6 +126,7 @@ object ExcelExporter {
                             item = get(11),
                             quantity = get(12),
                             unitPrice = get(13),
+                            amount = get(14),
                             name = get(15).ifBlank { name },
                             contact = get(16).ifBlank { contact },
                             remarks = get(17).ifBlank { remarks }
@@ -166,13 +168,14 @@ object ExcelExporter {
         item: String,
         quantity: String,
         unitPrice: String,
+        amount: String,
         name: String,
         contact: String,
         remarks: String,
     ) {
         val values = listOf(
             date, vehicleNumber, model, vehicleFormat, engine, manufactureYear, mileage,
-            category1, category2, category3, item, quantity, unitPrice, name, contact, remarks
+            category1, category2, category3, item, quantity, unitPrice, amount, name, contact, remarks
         )
         values.forEachIndexed { i, v -> row.createCell(i).setCellValue(v) }
     }
