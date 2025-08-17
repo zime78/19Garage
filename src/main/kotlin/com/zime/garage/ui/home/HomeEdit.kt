@@ -36,6 +36,29 @@ fun HomeEdit(
     var vehicleNumberDuplicateError by remember { mutableStateOf(false) }
     var vehicleNumberDuplicateErrorMessage by remember { mutableStateOf("") }
 
+    // 편집 모드: 기존 사용자 JSON에서 추가 필드(모델/국가형식/엔진/연식) 초기값 로드
+    val initValues = remember(originalCarNumber) {
+        val tmp = arrayOf("", "", "", "")
+        try {
+            val userFile = LocalFileManager.openFile(LocalFileManager.FileType.USER_DATA, originalCarNumber)
+            val txt = userFile?.readText()?.trim().orEmpty()
+            if (txt.isNotBlank() && txt.startsWith("{")) {
+                val obj = Json.parseToJsonElement(txt).jsonObject
+                tmp[0] = obj["model"]?.jsonPrimitive?.contentOrNull ?: ""
+                tmp[1] = obj["vehicleFormat"]?.jsonPrimitive?.contentOrNull ?: ""
+                tmp[2] = obj["engine"]?.jsonPrimitive?.contentOrNull ?: ""
+                tmp[3] = obj["manufactureYear"]?.jsonPrimitive?.contentOrNull ?: ""
+            }
+            LocalFileManager.closeFile(userFile)
+        } catch (_: Exception) {
+        }
+        tmp
+    }
+    val initModel = initValues[0]
+    val initVehicleFormat = initValues[1]
+    val initEngine = initValues[2]
+    val initManufactureYear = initValues[3]
+
     if (showDatePickerDialog) {
         Material3DatePicker(
             selectedDate = selectedDate,
@@ -62,7 +85,11 @@ fun HomeEdit(
             externalVehicleNumberError = vehicleNumberDuplicateError,
             externalVehicleNumberErrorMessage = vehicleNumberDuplicateErrorMessage,
             actionButtonText = "수정",
-            onAddClick = {
+            initialModel = initModel,
+            initialVehicleFormat = initVehicleFormat,
+            initialEngine = initEngine,
+            initialManufactureYear = initManufactureYear,
+            onAddClick = { model, vehicleFormat, engine, manufactureYear ->
                 val newVN = vehicleNumberState.value.trim()
                 // 자기 자신 제외 중복검증
                 if (!newVN.equals(originalCarNumber, ignoreCase = true) && LocalFileManager.isVehicleNumberDuplicate(newVN)) {
@@ -96,6 +123,10 @@ fun HomeEdit(
                                     put("contact", contactState.value)
                                     put("name", nameState.value)
                                     put("dbName", "user_${newVN}.db")
+                                    put("model", model)
+                                    put("vehicleFormat", vehicleFormat)
+                                    put("engine", engine)
+                                    put("manufactureYear", manufactureYear)
                                 }
                             )
                         } else {
@@ -136,7 +167,11 @@ fun HomeEdit(
                     date = dateState.value,
                     name = nameState.value,
                     contact = contactState.value,
-                    dbName = "user_${newVN}.db"
+                    dbName = "user_${newVN}.db",
+                    model = model,
+                    vehicleFormat = vehicleFormat,
+                    engine = engine,
+                    manufactureYear = manufactureYear
                 )
                 if (!saved) {
                     println("[ERROR] 사용자 JSON 저장 실패")

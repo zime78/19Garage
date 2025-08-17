@@ -34,5 +34,9 @@ data class UserInfo(
     val phoneNumber: String,
     val carNumber: String,
     val registrationDate: String = "",
-    val dbFileName: String = ""
+    val dbFileName: String = "",
+    val model: String = "",
+    val vehicleFormat: String = "",
+    val engine: String = "",
+    val manufactureYear: String = ""
 )

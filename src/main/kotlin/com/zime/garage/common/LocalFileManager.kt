@@ -507,7 +507,11 @@ object LocalFileManager {
         date: String,
         name: String,
         contact: String,
-        dbName: String
+        dbName: String,
+        model: String = "",
+        vehicleFormat: String = "",
+        engine: String = "",
+        manufactureYear: String = ""
     ): Boolean {
         return try {
             val userDbFile = openFile(FileType.USER_DATA, vehicleNumber)
@@ -524,6 +528,11 @@ object LocalFileManager {
                 put("name", name)
                 put("contact", contact)
                 put("dbName", dbName)
+                put("model", model)
+                put("vehicleFormat", vehicleFormat)
+                put("engine", engine)
+                put("manufactureYear", manufactureYear)
+                //추가시간
                 put("createdAt", SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.KOREA).format(Date()))
             }
 

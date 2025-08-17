@@ -51,7 +51,15 @@ object ExcelUserImporter {
         // 연락처
         "contact" to "contact", "연락처" to "contact", "전화번호" to "contact", "휴대폰" to "contact",
         // 비고
-        "remarks" to "remarks", "비고" to "remarks", "메모" to "remarks"
+        "remarks" to "remarks", "비고" to "remarks", "메모" to "remarks",
+        // 모델
+        "model" to "model", "모델" to "model", "차종" to "model",
+        // 국가형식
+        "vehicleformat" to "vehicleFormat", "국가형식(유럽/북미/mhd)" to "vehicleFormat", "차량생산국가" to "vehicleFormat", "차량생산 국가" to "vehicleFormat", "국가형식" to "vehicleFormat", "국가" to "vehicleFormat", "차량형식" to "vehicleFormat", "국가 형식" to "vehicleFormat",
+        // 엔진
+        "engine" to "engine", "엔진" to "engine",
+        // 연식(년도)
+        "manufactureyear" to "manufactureYear", "year" to "manufactureYear", "연식" to "manufactureYear", "연식(년도)" to "manufactureYear", "년도" to "manufactureYear"
     )
 
     private val inputDateFormats = listOf(
@@ -90,20 +98,26 @@ object ExcelUserImporter {
                     if (raw.isNotEmpty()) {
                         val key = headerAliases[raw] ?: headerAliases[raw.replace(" ", "")] ?: raw
                         when (key) {
-                            "date", "vehicleNumber", "name", "contact", "remarks" -> if (key !in columnMap) columnMap[key] = idx
+                            "date", "vehicleNumber", "name", "contact", "remarks",
+                            "model", "vehicleFormat", "engine", "manufactureYear" -> if (key !in columnMap) columnMap[key] = idx
                         }
                     }
                 }
                 dataStartRow = 1
             }
 
-            // 헤더 미매핑 시 기본 순서(A~E = 날짜, 차량번호, 이름, 연락처, 비고)
+            // 헤더 미매핑 시 기본 순서(A~E = 날짜, 차량번호, 이름, 연락처, 비고, F~I = 모델, 국가형식, 엔진, 연식)
             if (columnMap.isEmpty()) {
                 columnMap["date"] = 0
                 columnMap["vehicleNumber"] = 1
                 columnMap["name"] = 2
                 columnMap["contact"] = 3
                 columnMap["remarks"] = 4
+                // 옵션 필드 기본 위치 (있을 경우 사용, 없으면 안전하게 빈 값 처리됨)
+                columnMap["model"] = 5
+                columnMap["vehicleFormat"] = 6
+                columnMap["engine"] = 7
+                columnMap["manufactureYear"] = 8
             }
 
             val messages = mutableListOf<String>()
@@ -123,6 +137,10 @@ object ExcelUserImporter {
                 val name = getCellString(row.getCell(columnMap["name"] ?: -1), formatter) ?: ""
                 val contact = getCellString(row.getCell(columnMap["contact"] ?: -1), formatter) ?: ""
                 val remarks = getCellString(row.getCell(columnMap["remarks"] ?: -1), formatter) ?: ""
+                val model = getCellString(row.getCell(columnMap["model"] ?: -1), formatter) ?: ""
+                val vehicleFormat = getCellString(row.getCell(columnMap["vehicleFormat"] ?: -1), formatter) ?: ""
+                val engine = getCellString(row.getCell(columnMap["engine"] ?: -1), formatter) ?: ""
+                val manufactureYear = getCellString(row.getCell(columnMap["manufactureYear"] ?: -1), formatter) ?: ""
 
                 if (vehicleNumber.isBlank() || name.isBlank()) {
                     // 필수값 누락
@@ -139,6 +157,10 @@ object ExcelUserImporter {
                     vehicleNumber = vehicleNumber,
                     name = name,
                     contact = contact,
+                    model = model,
+                    vehicleFormat = vehicleFormat,
+                    engine = engine,
+                    manufactureYear = manufactureYear,
                     remarks = remarks
                 )
 

@@ -53,7 +53,12 @@ data class UserInfo(
     val phoneNumber: String,
     val carNumber: String,
     val registrationDate: String = "", // 등록일자 추가
-    val dbFileName: String = "" // user_%s.db 파일명 추가
+    val dbFileName: String = "", // user_%s.db 파일명 추가
+    // 추가 항목: 모델/국가형식/엔진/연식(년도)
+    val model: String = "",
+    val vehicleFormat: String = "",
+    val engine: String = "",
+    val manufactureYear: String = ""
 )
 
 
@@ -82,12 +87,32 @@ fun loadUsersFromFile(): List<UserInfo> {
                 
                 if (dbFileExists) {
                     // DB 파일이 존재하는 경우만 리스트에 추가
+                    // per-user JSON에서 추가 필드 읽기 (없으면 빈 문자열)
+                    var model = ""
+                    var vehicleFormat = ""
+                    var engine = ""
+                    var manufactureYear = ""
+                    try {
+                        val jsonText = dbFile?.readText()?.trim().orEmpty()
+                        if (jsonText.isNotBlank() && jsonText.startsWith("{")) {
+                            val obj = Json.parseToJsonElement(jsonText).jsonObject
+                            model = obj["model"]?.jsonPrimitive?.contentOrNull ?: ""
+                            vehicleFormat = obj["vehicleFormat"]?.jsonPrimitive?.contentOrNull ?: ""
+                            engine = obj["engine"]?.jsonPrimitive?.contentOrNull ?: ""
+                            manufactureYear = obj["manufactureYear"]?.jsonPrimitive?.contentOrNull ?: ""
+                        }
+                    } catch (_: Exception) { }
+
                     val userInfo = UserInfo(
                         name = parts[4].trim(),           // 이름
                         phoneNumber = parts[3].trim(),    // 연락처
                         carNumber = carNumber,            // 차량번호
                         registrationDate = parts[2].trim(), // 등록일자
-                        dbFileName = dbFileName           // DB파일명 (user_%s.db)
+                        dbFileName = dbFileName,          // DB파일명 (user_%s.db)
+                        model = model,                    // 모델
+                        vehicleFormat = vehicleFormat,    // 국가형식
+                        engine = engine,                  // 엔진
+                        manufactureYear = manufactureYear // 연식
                     )
                     validUsers.add(userInfo)
                     validUserLines.add(userLine)

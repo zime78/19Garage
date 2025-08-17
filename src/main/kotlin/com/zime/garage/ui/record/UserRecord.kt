@@ -393,14 +393,9 @@ private fun AddRecordDialog(
 
     // 기본값들
     val today = remember { SimpleDateFormat("yyyy-MM-dd", Locale.KOREA).format(Date()) }
-    val currentYear = remember { Calendar.getInstance().get(Calendar.YEAR) }
 
     // 입력 상태
     var date by remember { mutableStateOf(today) }
-    var model by remember { mutableStateOf("") }
-    var vehicleFormat by remember { mutableStateOf("") }
-    var engine by remember { mutableStateOf("") }
-    var manufactureYear by remember { mutableStateOf("") }
     var mileage by remember { mutableStateOf("") }
     var category1 by remember { mutableStateOf("") }
     var category2 by remember { mutableStateOf("") }
@@ -411,24 +406,12 @@ private fun AddRecordDialog(
     var remarks by remember { mutableStateOf("") }
 
     // 옵션 로드
-    var modelOptions by remember { mutableStateOf(listOf<String>()) }
-    var formatOptions by remember { mutableStateOf(listOf<String>()) }
-    var engineOptions by remember { mutableStateOf(listOf<String>()) }
     var cat1Options by remember { mutableStateOf(listOf<String>()) }
     var cat2Options by remember { mutableStateOf(listOf<String>()) }
     var cat3Options by remember { mutableStateOf(listOf<String>()) }
     var itemOptions by remember { mutableStateOf(listOf<String>()) }
 
     LaunchedEffect(Unit) {
-        try {
-            modelOptions = VehicleModelModel().loadVehicleModelFile().map { it.model }
-        } catch (_: Exception) {}
-        try {
-            formatOptions = VehicleFormatModel().loadVehicleFormatFile().map { it.type }
-        } catch (_: Exception) {}
-        try {
-            engineOptions = EngineModel().loadEngineFile().map { it.type }
-        } catch (_: Exception) {}
         try {
             cat1Options = ItemsModel().loadItemsFile().map { it.item }
         } catch (_: Exception) {}
@@ -441,9 +424,6 @@ private fun AddRecordDialog(
         // 품목은 현재 별도 관리가 없을 수 있어 자유 입력 허용. 필요시 options를 연결하세요.
     }
 
-    // 년도 리스트
-    val years = remember { (currentYear downTo (currentYear - 50)).map { it.toString() } }
-
     // 금액 계산 표시용
     val amountDisplay = remember(quantity, unitPrice) {
         val amt = try {
@@ -455,15 +435,11 @@ private fun AddRecordDialog(
     }
 
     // 필수 입력 검증
-    val modelError = remember(model) { model.isBlank() }
-    val vehicleFormatError = remember(vehicleFormat) { vehicleFormat.isBlank() }
-    val engineError = remember(engine) { engine.isBlank() }
-    val manufactureYearError = remember(manufactureYear) { manufactureYear.isBlank() }
     val mileageError = remember(mileage) { mileage.isBlank() }
     val category1Error = remember(category1) { category1.isBlank() }
     val category2Error = remember(category2) { category2.isBlank() }
     val category3Error = remember(category3) { category3.isBlank() }
-    val isFormValid = !(modelError || vehicleFormatError || engineError || manufactureYearError || mileageError || category1Error || category2Error || category3Error)
+    val isFormValid = !(mileageError || category1Error || category2Error || category3Error)
 
     // 날짜 선택 다이얼로그 상태를 AlertDialog 바깥(동일 스코프)으로 호이스팅
     var showDatePickerDialog by remember { mutableStateOf(false) }
@@ -501,18 +477,7 @@ private fun AddRecordDialog(
                     )
                 }
                 Spacer(Modifier.height(8.dp))
-
-                // 모델 / 국가형식 / 엔진 (필수)
-                DropdownTextField(label = "모델", value = model, onValueChange = { model = it }, options = modelOptions, isError = modelError)
-                Spacer(Modifier.height(8.dp))
-                DropdownTextField(label = "국가형식", value = vehicleFormat, onValueChange = { vehicleFormat = it }, options = formatOptions, isError = vehicleFormatError)
-                Spacer(Modifier.height(8.dp))
-                DropdownTextField(label = "엔진", value = engine, onValueChange = { engine = it }, options = engineOptions, isError = engineError)
-                Spacer(Modifier.height(8.dp))
-
-                // 연식(년도) / 주행거리 (필수)
-                DropdownTextField(label = "연식(년도)", value = manufactureYear, onValueChange = { manufactureYear = it }, options = years, isError = manufactureYearError)
-                Spacer(Modifier.height(8.dp))
+                // 주행거리 (필수)
                 OutlinedTextField(
                     value = mileage,
                     onValueChange = { v -> mileage = v.filter { it.isDigit() } },
@@ -577,10 +542,10 @@ private fun AddRecordDialog(
                         carNumber = userInfo.carNumber,
                         date = date,
                         vehicleNumber = userInfo.carNumber, // UI 제외, 저장은 차량번호 사용
-                        model = model,
-                        vehicleFormat = vehicleFormat,
-                        engine = engine,
-                        manufactureYear = manufactureYear,
+                        model = userInfo.model,
+                        vehicleFormat = userInfo.vehicleFormat,
+                        engine = userInfo.engine,
+                        manufactureYear = userInfo.manufactureYear,
                         mileage = mileage,
                         category1 = category1,
                         category2 = category2,
@@ -607,7 +572,7 @@ private fun AddRecordDialog(
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-private fun DropdownTextField(
+fun DropdownTextField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
@@ -771,14 +736,9 @@ private fun EditRecordDialog(
 
     // 기본값들
     val today = remember { SimpleDateFormat("yyyy-MM-dd", Locale.KOREA).format(Date()) }
-    val currentYear = remember { Calendar.getInstance().get(Calendar.YEAR) }
 
     // 초기값 매핑 (컬럼 인덱스 참고)
     val initDate = initialRow.getOrNull(1) ?: today
-    val initModel = initialRow.getOrNull(3) ?: ""
-    val initVehicleFormat = initialRow.getOrNull(4) ?: ""
-    val initEngine = initialRow.getOrNull(5) ?: ""
-    val initManufactureYear = initialRow.getOrNull(6) ?: ""
     val initMileage = initialRow.getOrNull(7) ?: ""
     val initCategory1 = initialRow.getOrNull(8) ?: ""
     val initCategory2 = initialRow.getOrNull(9) ?: ""
@@ -790,10 +750,6 @@ private fun EditRecordDialog(
 
     // 입력 상태
     var date by remember(initialRow) { mutableStateOf(initDate) }
-    var model by remember(initialRow) { mutableStateOf(initModel) }
-    var vehicleFormat by remember(initialRow) { mutableStateOf(initVehicleFormat) }
-    var engine by remember(initialRow) { mutableStateOf(initEngine) }
-    var manufactureYear by remember(initialRow) { mutableStateOf(initManufactureYear) }
     var mileage by remember(initialRow) { mutableStateOf(initMileage) }
     var category1 by remember(initialRow) { mutableStateOf(initCategory1) }
     var category2 by remember(initialRow) { mutableStateOf(initCategory2) }
@@ -804,25 +760,16 @@ private fun EditRecordDialog(
     var remarks by remember(initialRow) { mutableStateOf(initRemarks) }
 
     // 옵션 로드
-    var modelOptions by remember { mutableStateOf(listOf<String>()) }
-    var formatOptions by remember { mutableStateOf(listOf<String>()) }
-    var engineOptions by remember { mutableStateOf(listOf<String>()) }
     var cat1Options by remember { mutableStateOf(listOf<String>()) }
     var cat2Options by remember { mutableStateOf(listOf<String>()) }
     var cat3Options by remember { mutableStateOf(listOf<String>()) }
     var itemOptions by remember { mutableStateOf(listOf<String>()) }
 
     LaunchedEffect(Unit) {
-        try { modelOptions = VehicleModelModel().loadVehicleModelFile().map { it.model } } catch (_: Exception) {}
-        try { formatOptions = VehicleFormatModel().loadVehicleFormatFile().map { it.type } } catch (_: Exception) {}
-        try { engineOptions = EngineModel().loadEngineFile().map { it.type } } catch (_: Exception) {}
         try { cat1Options = ItemsModel().loadItemsFile().map { it.item } } catch (_: Exception) {}
         try { cat2Options = Items2Model().loadClassificationFile().map { it.type } } catch (_: Exception) {}
         try { cat3Options = Items3Model().loadClassificationFile().map { it.type } } catch (_: Exception) {}
     }
-
-    // 년도 리스트
-    val years = remember { (currentYear downTo (currentYear - 50)).map { it.toString() } }
 
     // 금액 계산 표시용
     val amountDisplay = remember(quantity, unitPrice) {
@@ -835,15 +782,11 @@ private fun EditRecordDialog(
     }
 
     // 필수 입력 검증
-    val modelError = remember(model) { model.isBlank() }
-    val vehicleFormatError = remember(vehicleFormat) { vehicleFormat.isBlank() }
-    val engineError = remember(engine) { engine.isBlank() }
-    val manufactureYearError = remember(manufactureYear) { manufactureYear.isBlank() }
     val mileageError = remember(mileage) { mileage.isBlank() }
     val category1Error = remember(category1) { category1.isBlank() }
     val category2Error = remember(category2) { category2.isBlank() }
     val category3Error = remember(category3) { category3.isBlank() }
-    val isFormValid = !(modelError || vehicleFormatError || engineError || manufactureYearError || mileageError || category1Error || category2Error || category3Error)
+    val isFormValid = !(mileageError || category1Error || category2Error || category3Error)
 
     // 날짜 선택 다이얼로그 상태
     var showDatePickerDialog by remember { mutableStateOf(false) }
@@ -882,17 +825,7 @@ private fun EditRecordDialog(
                 }
                 Spacer(Modifier.height(8.dp))
 
-                // 모델 / 국가형식 / 엔진 (필수)
-                DropdownTextField(label = "모델", value = model, onValueChange = { model = it }, options = modelOptions, isError = modelError)
-                Spacer(Modifier.height(8.dp))
-                DropdownTextField(label = "국가형식", value = vehicleFormat, onValueChange = { vehicleFormat = it }, options = formatOptions, isError = vehicleFormatError)
-                Spacer(Modifier.height(8.dp))
-                DropdownTextField(label = "엔진", value = engine, onValueChange = { engine = it }, options = engineOptions, isError = engineError)
-                Spacer(Modifier.height(8.dp))
-
-                // 연식(년도) / 주행거리 (필수)
-                DropdownTextField(label = "연식(년도)", value = manufactureYear, onValueChange = { manufactureYear = it }, options = years, isError = manufactureYearError)
-                Spacer(Modifier.height(8.dp))
+                // 주행거리 (필수)
                 OutlinedTextField(
                     value = mileage,
                     onValueChange = { v -> mileage = v.filter { it.isDigit() } },
@@ -958,10 +891,10 @@ private fun EditRecordDialog(
                         index = targetIndex,
                         date = date,
                         vehicleNumber = userInfo.carNumber, // UI에서 수정하지 않음
-                        model = model,
-                        vehicleFormat = vehicleFormat,
-                        engine = engine,
-                        manufactureYear = manufactureYear,
+                        model = userInfo.model,
+                        vehicleFormat = userInfo.vehicleFormat,
+                        engine = userInfo.engine,
+                        manufactureYear = userInfo.manufactureYear,
                         mileage = mileage,
                         category1 = category1,
                         category2 = category2,

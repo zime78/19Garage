@@ -96,7 +96,11 @@ class UserAddModel(): BaseModel() {
                 date = registrationDate,
                 name = userAddData.name,
                 contact = userAddData.contact,
-                dbName = userAddData.dbName
+                dbName = userAddData.dbName,
+                model = userAddData.model,
+                vehicleFormat = userAddData.vehicleFormat,
+                engine = userAddData.engine,
+                manufactureYear = userAddData.manufactureYear
             )
 
             if (jsonSaved) {

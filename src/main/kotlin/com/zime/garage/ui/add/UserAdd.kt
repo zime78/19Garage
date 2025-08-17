@@ -20,6 +20,10 @@ import androidx.compose.ui.window.rememberWindowState
 import com.zime.garage.common.Material3DatePicker
 import com.zime.garage.ui.add.type.UserAddType
 import com.zime.garage.ui.add.model.UserAddModel
+import com.zime.garage.ui.data.model.EngineModel
+import com.zime.garage.ui.data.model.VehicleFormatModel
+import com.zime.garage.ui.data.model.VehicleModelModel
+import com.zime.garage.ui.record.DropdownTextField
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -38,6 +42,28 @@ fun ViewUserAddPreview() {
     val vehicleNumber = remember { mutableStateOf("12가 3456") }
     val name = remember { mutableStateOf("홍길동") }
     val contact = remember { mutableStateOf("010-1234-5678") }
+
+    // 신규 입력 상태 (모델/국가형식/엔진/연식)
+    var model by remember { mutableStateOf("") }
+    var vehicleFormat by remember { mutableStateOf("") }
+    var engine by remember { mutableStateOf("") }
+    var manufactureYear by remember { mutableStateOf("") }
+
+    // 옵션 로드 (파일에서 로드, 실패 시 빈 리스트)
+    var modelOptions by remember { mutableStateOf(listOf<String>()) }
+    var formatOptions by remember { mutableStateOf(listOf<String>()) }
+    var engineOptions by remember { mutableStateOf(listOf<String>()) }
+
+    LaunchedEffect(Unit) {
+        try { modelOptions = VehicleModelModel().loadVehicleModelFile().map { it.model } } catch (_: Exception) {}
+        try { formatOptions = VehicleFormatModel().loadVehicleFormatFile().map { it.type } } catch (_: Exception) {}
+        try { engineOptions = EngineModel().loadEngineFile().map { it.type } } catch (_: Exception) {}
+    }
+
+    // 연식(년도) 목록
+    val currentYear = remember { Calendar.getInstance().get(Calendar.YEAR) }
+    val years = remember { (currentYear downTo (currentYear - 50)).map { it.toString() } }
+
     var showPreview by remember { mutableStateOf(true) }
 
     MaterialTheme {
@@ -108,6 +134,17 @@ fun ViewUserAddPreview() {
                     )
                 }
 
+                // 모델 / 국가형식 / 엔진 (필수)
+                DropdownTextField(label = "모델", value = model, onValueChange = { model = it }, options = modelOptions, isError = model.isBlank())
+                Spacer(Modifier.height(8.dp))
+                DropdownTextField(label = "국가형식", value = vehicleFormat, onValueChange = { vehicleFormat = it }, options = formatOptions, isError = vehicleFormat.isBlank())
+                Spacer(Modifier.height(8.dp))
+                DropdownTextField(label = "엔진", value = engine, onValueChange = { engine = it }, options = engineOptions, isError = engine.isBlank())
+                Spacer(Modifier.height(8.dp))
+
+                // 연식(년도) (필수)
+                DropdownTextField(label = "연식(년도)", value = manufactureYear, onValueChange = { manufactureYear = it }, options = years, isError = manufactureYear.isBlank())
+
                 // 미리보기 토글 버튼
                 Button(
                     onClick = { showPreview = !showPreview },
@@ -122,7 +159,11 @@ fun ViewUserAddPreview() {
                         date = date.value,
                         vehicleNumber = vehicleNumber.value,
                         name = name.value,
-                        contact = contact.value
+                        contact = contact.value,
+                        model = model,
+                        vehicleFormat = vehicleFormat,
+                        engine = engine,
+                        manufactureYear = manufactureYear
                     )
                 }
             }
@@ -143,21 +184,46 @@ fun UserAddContent(
     name: MutableState<String>,
     contact: MutableState<String>,
     onDateClick: () -> Unit = {},
-    onAddClick: () -> Unit = {},
+    onAddClick: (model: String, vehicleFormat: String, engine: String, manufactureYear: String) -> Unit = { _, _, _, _ -> },
     onCloseClick: () -> Unit = {},
     externalVehicleNumberError: Boolean = false,
     externalVehicleNumberErrorMessage: String = "",
-    actionButtonText: String = "추가"
+    actionButtonText: String = "추가",
+    initialModel: String = "",
+    initialVehicleFormat: String = "",
+    initialEngine: String = "",
+    initialManufactureYear: String = ""
 ) {
     val scrollState = rememberScrollState()
     // 미리보기 표시 상태 관리
     var showPreview by remember { mutableStateOf(false) }
-    
+
+    // 신규 입력 상태 (모델/국가형식/엔진/연식) - 편집 모드에서는 초기값 주입
+    var model by remember(initialModel) { mutableStateOf(initialModel) }
+    var vehicleFormat by remember(initialVehicleFormat) { mutableStateOf(initialVehicleFormat) }
+    var engine by remember(initialEngine) { mutableStateOf(initialEngine) }
+    var manufactureYear by remember(initialManufactureYear) { mutableStateOf(initialManufactureYear) }
+
+    // 옵션 로드 (파일에서 로드, 실패 시 빈 리스트)
+    var modelOptions by remember { mutableStateOf(listOf<String>()) }
+    var formatOptions by remember { mutableStateOf(listOf<String>()) }
+    var engineOptions by remember { mutableStateOf(listOf<String>()) }
+
+    LaunchedEffect(Unit) {
+        try { modelOptions = VehicleModelModel().loadVehicleModelFile().map { it.model } } catch (_: Exception) {}
+        try { formatOptions = VehicleFormatModel().loadVehicleFormatFile().map { it.type } } catch (_: Exception) {}
+        try { engineOptions = EngineModel().loadEngineFile().map { it.type } } catch (_: Exception) {}
+    }
+
+    // 연식(년도) 목록
+    val currentYear = remember { Calendar.getInstance().get(Calendar.YEAR) }
+    val years = remember { (currentYear downTo (currentYear - 50)).map { it.toString() } }
+
     // 입력 필드 오류 상태 관리
     var vehicleNumberError by remember { mutableStateOf(false) }
     var nameError by remember { mutableStateOf(false) }
     var contactError by remember { mutableStateOf(false) }
-    
+
     // 오류 메시지 관리
     var vehicleNumberErrorMessage by remember { mutableStateOf("") }
     var nameErrorMessage by remember { mutableStateOf("") }
@@ -183,7 +249,7 @@ fun UserAddContent(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             val dateInteractionSource = remember { MutableInteractionSource() }
-            
+
             // InteractionSource를 사용하여 클릭 감지(클릭안되는 문제수정)
             LaunchedEffect(dateInteractionSource) {
                 dateInteractionSource.interactions.collect { interaction ->
@@ -194,7 +260,7 @@ fun UserAddContent(
                     }
                 }
             }
-            
+
             TextField(
                 value = date.value,
                 onValueChange = { /* 읽기 전용이므로 변경 불가 */ },
@@ -208,7 +274,7 @@ fun UserAddContent(
 
             TextField(
                 value = vehicleNumber.value,
-                onValueChange = { 
+                onValueChange = {
                     // 차량번호는 10자 제한하고 빈 문자/스페이스 제거
                     val trimmedValue = it.trim()
                     if (trimmedValue.length <= 10) {
@@ -244,7 +310,7 @@ fun UserAddContent(
         ) {
             TextField(
                 value = name.value,
-                onValueChange = { 
+                onValueChange = {
                     // 이름은 10자 미만으로 제한하고 빈 문자/스페이스 제거
                     val trimmedValue = it.trim()
                     if (trimmedValue.length < 10) {
@@ -300,6 +366,17 @@ fun UserAddContent(
             )
         }
 
+        // 모델 / 국가형식 / 엔진 (필수)
+        DropdownTextField(label = "모델", value = model, onValueChange = { model = it }, options = modelOptions, isError = model.isBlank())
+        Spacer(Modifier.height(8.dp))
+        DropdownTextField(label = "국가형식", value = vehicleFormat, onValueChange = { vehicleFormat = it }, options = formatOptions, isError = vehicleFormat.isBlank())
+        Spacer(Modifier.height(8.dp))
+        DropdownTextField(label = "엔진", value = engine, onValueChange = { engine = it }, options = engineOptions, isError = engine.isBlank())
+        Spacer(Modifier.height(8.dp))
+
+        // 연식(년도) (필수)
+        DropdownTextField(label = "연식(년도)", value = manufactureYear, onValueChange = { manufactureYear = it }, options = years, isError = manufactureYear.isBlank())
+
         // 미리보기 토글 버튼
         Button(
             onClick = { showPreview = !showPreview },
@@ -308,13 +385,17 @@ fun UserAddContent(
             Text(if (showPreview) "미리보기 숨기기" else "미리보기 보기")
         }
 
-        // 미리보기 카드
+        // 미리보기 카드(비고 제외)
         if (showPreview) {
-            PreviewCard(
+            PreviewCardNoRemarks(
                 date = date.value,
                 vehicleNumber = vehicleNumber.value,
                 name = name.value,
                 contact = contact.value,
+                model = model,
+                vehicleFormat = vehicleFormat,
+                engine = engine,
+                manufactureYear = manufactureYear
             )
         }
 
@@ -334,7 +415,7 @@ fun UserAddContent(
                 onClick = {
                     // 모든 필수 입력 검증
                     var hasError = false
-                    
+
                     // 차량 번호 검증
                     if (vehicleNumber.value.trim().isEmpty()) {
                         vehicleNumberError = true
@@ -344,7 +425,7 @@ fun UserAddContent(
                         vehicleNumberError = false
                         vehicleNumberErrorMessage = ""
                     }
-                    
+
                     // 이름 검증
                     if (name.value.trim().isEmpty()) {
                         nameError = true
@@ -354,7 +435,7 @@ fun UserAddContent(
                         nameError = false
                         nameErrorMessage = ""
                     }
-                    
+
                     // 연락처 검증
                     if (contact.value.trim().isEmpty()) {
                         contactError = true
@@ -364,10 +445,24 @@ fun UserAddContent(
                         contactError = false
                         contactErrorMessage = ""
                     }
-                    
+
+                    // 모델/국가형식/엔진/연식 검증 (필수)
+                    if (model.isBlank()) {
+                        hasError = true
+                    }
+                    if (vehicleFormat.isBlank()) {
+                        hasError = true
+                    }
+                    if (engine.isBlank()) {
+                        hasError = true
+                    }
+                    if (manufactureYear.isBlank()) {
+                        hasError = true
+                    }
+
                     // 모든 검증 통과 시 추가 로직 실행
                     if (!hasError) {
-                        onAddClick()
+                        onAddClick(model, vehicleFormat, engine, manufactureYear)
                     }
                 },
                 modifier = Modifier.weight(1f).padding(end = 8.dp)
@@ -540,7 +635,7 @@ fun ViewUserAdd(onCloseCallback: () -> Unit) {
             },
             externalVehicleNumberError = vehicleNumberDuplicateError,
             externalVehicleNumberErrorMessage = vehicleNumberDuplicateErrorMessage,
-            onAddClick = {
+            onAddClick = { model, vehicleFormat, engine, manufactureYear ->
                 val newUser = UserAddType(
                     id = 0, // 인덱스는 자동 생성됨
                     dbName = "user_${vehicleNumber.value}.db",
@@ -548,6 +643,10 @@ fun ViewUserAdd(onCloseCallback: () -> Unit) {
                     vehicleNumber = vehicleNumber.value,
                     name = name.value,
                     contact = contact.value,
+                    model = model,
+                    vehicleFormat = vehicleFormat,
+                    engine = engine,
+                    manufactureYear = manufactureYear,
                     remarks = remarks.value
                 )
                 
@@ -590,7 +689,11 @@ fun PreviewCardNoRemarks(
     date: String,
     vehicleNumber: String,
     name: String,
-    contact: String
+    contact: String,
+    model: String,
+    vehicleFormat: String,
+    engine: String,
+    manufactureYear: String
 ) {
     Card(
         modifier = Modifier
@@ -624,7 +727,23 @@ fun PreviewCardNoRemarks(
             )
             PreviewItem(
                 label = "연락처",
-                value = contact.ifEmpty { "입력되지 않음" },
+                value = contact.ifEmpty { "입력되지 않음" }
+            )
+            PreviewItem(
+                label = "모델",
+                value = model.ifEmpty { "입력되지 않음" }
+            )
+            PreviewItem(
+                label = "국가형식",
+                value = vehicleFormat.ifEmpty { "입력되지 않음" }
+            )
+            PreviewItem(
+                label = "엔진",
+                value = engine.ifEmpty { "입력되지 않음" }
+            )
+            PreviewItem(
+                label = "연식",
+                value = manufactureYear.ifEmpty { "입력되지 않음" },
                 isLast = true
             )
         }
