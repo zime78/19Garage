@@ -41,6 +41,7 @@ import java.awt.Toolkit.getDefaultToolkit
 import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
+import kotlinx.serialization.json.*
 
 
 
@@ -127,21 +128,35 @@ fun updateUserListFile(validUserLines: List<String>) {
     try {
         val userListFile = LocalFileManager.openFile(LocalFileManager.FileType.USER_LIST)
         if (userListFile != null) {
-            // 기존 파일 내용을 유효한 항목들로 덮어쓰기
-            val content = validUserLines.joinToString("\n")
-            if (content.isNotEmpty()) {
-                userListFile.writeText("$content\n")
-            } else {
-                userListFile.writeText("")
+            // CSV 라인 리스트를 JSON 배열로 변환하여 저장
+            val jsonArray = buildJsonArray {
+                validUserLines.forEach { line ->
+                    val parts = line.split(",")
+                    if (parts.size >= 7) {
+                        add(
+                            buildJsonObject {
+                                put("index", parts[0].trim().toIntOrNull() ?: 0)
+                                put("vehicleNumber", parts[1].trim())
+                                put("registrationDate", parts[2].trim())
+                                put("contact", parts[3].trim())
+                                put("name", parts[4].trim())
+                                put("remarks", parts[5].trim())
+                                put("dbName", parts[6].trim())
+                            }
+                        )
+                    }
+                }
             }
+
+            userListFile.writeText(Json.encodeToString(JsonElement.serializer(), jsonArray))
             
             LocalFileManager.closeFile(userListFile)
-            println("[DEBUG] 사용자 리스트 파일 업데이트 성공: ${validUserLines.size}개 항목")
+            println("[DEBUG] 사용자 리스트 파일(JSON) 업데이트 성공: ${validUserLines.size}개 항목")
         } else {
             println("[ERROR] 사용자 리스트 파일 연결 실패")
         }
     } catch (e: Exception) {
-        println("[ERROR] 사용자 리스트 파일 업데이트 중 오류: ${e.message}")
+        println("[ERROR] 사용자 리스트 파일(JSON) 업데이트 중 오류: ${e.message}")
         e.printStackTrace()
     }
 }

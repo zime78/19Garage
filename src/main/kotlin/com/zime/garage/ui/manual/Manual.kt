@@ -137,7 +137,7 @@ private fun manualLines(): List<String> = listOf(
     "",
     "# 고객 관리",
     "- 메인 목록에서 고객을 선택하여 상세를 확인할 수 있습니다.",
-    "- 고객 데이터는 user_list.txt 및 각 고객 DB(예: user_*.db) 등 파일 기반으로 관리되며, LocalFileManager가 일관성을 유지합니다.",
+    "- 고객 데이터는 user_list.json 및 각 고객 DB(예: user_*.db) 등 파일 기반으로 관리되며, LocalFileManager가 일관성을 유지합니다.",
     "",
     "# 문제 해결",
     "- 데이터가 보이지 않거나 파일 오류가 발생하면: 앱을 재시작하거나, 파일 > 파일 보내기로 백업 후 다시 가져오기 기능을 사용해 보세요.",

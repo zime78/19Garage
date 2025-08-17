@@ -55,7 +55,7 @@ object LocalFileManager {
         ITEMS3,
         /** 사용자 데이터 파일 */
         USER_DATA, // 사용자 데이터 파일 (user_%s.db)
-        USER_LIST // 사용자 리스트 파일 (user_list.txt)
+        USER_LIST // 사용자 리스트 파일 (user_list.json)
     }
 
     // === 데이터베이스 파일 경로 설정 ===
@@ -75,7 +75,7 @@ object LocalFileManager {
 
     /** 사용자 데이터 파일 경로 (user_%s.db), 사용자 리스트 파일 경로 */
     private val fileUserData = getDatabasePath("db/user/user_%s.db", true)
-    private val fileUserList = getDatabasePath("db/user_list.txt", true)
+    private val fileUserList = getDatabasePath("db/user_list.json", true)
 
     /** 개별 차량 작업 기록 파일 경로 (%s.json) - 차량번호를 파일명으로 사용 */
     private val fileUserRecord = getDatabasePath("db/userDB/%s.json", true)
@@ -240,21 +240,39 @@ object LocalFileManager {
                 return -1
             }
 
-            // 기존 사용자 리스트 로드하여 다음 인덱스 계산
-            val existingUsers = loadUserList()
-            val nextIndex = if (existingUsers.isEmpty()) 1 else existingUsers.maxOf { it.split(",")[0].toInt() } + 1
+            // 현재 JSON 배열 읽기
+            val text = if (userListFile.exists()) userListFile.readText().trim() else ""
+            val arr: MutableList<JsonObject> = if (text.isNotBlank() && text.startsWith("[")) {
+                Json.parseToJsonElement(text).jsonArray.map { it.jsonObject }.toMutableList()
+            } else {
+                mutableListOf()
+            }
+
+            // 다음 인덱스 계산
+            val nextIndex = if (arr.isEmpty()) 1 else (arr.maxOf { it["index"]?.jsonPrimitive?.intOrNull ?: 0 } + 1)
 
             // 사용자 데이터베이스 파일명 생성
             val dbFileName = "user_$vehicleNumber.db"
 
-            // 새 사용자 정보 라인 생성 (인덱스, 차량번호, 등록일자, 연락처, 이름, 비고, DB파일명)
-            val userLine = "$nextIndex,$vehicleNumber,$registrationDate,$contact,$name,$remarks,$dbFileName"
+            // 새 사용자 JSON 객체 생성
+            val newObj = buildJsonObject {
+                put("index", nextIndex)
+                put("vehicleNumber", vehicleNumber)
+                put("registrationDate", registrationDate)
+                put("contact", contact)
+                put("name", name)
+                put("remarks", remarks)
+                put("dbName", dbFileName)
+            }
 
-            // 파일에 추가
-            userListFile.appendText("$userLine\n")
+            arr.add(newObj)
+
+            // JSON 파일로 저장
+            val newJson = buildJsonArray { arr.forEach { add(it) } }
+            userListFile.writeText(Json.encodeToString(JsonElement.serializer(), newJson))
 
             if (DEBUG_LOG) {
-                println("사용자 리스트에 추가됨: $userLine")
+                println("사용자 리스트(JSON)에 추가됨: $newObj")
             }
 
             closeFile(userListFile)
@@ -311,21 +329,61 @@ object LocalFileManager {
      *  사용자 리스트 파일 보장: 없으면 빈 파일 생성
      */
     fun initializeUserListFile(){
-        // 사용자 리스트 파일 초기화: 존재하면 내용을 비우고, 없으면 생성
+        // 사용자 리스트 파일 초기화: JSON 배열로 초기화, 또는 기존 TXT를 JSON으로 마이그레이션
         try {
-            val userListFile = File(fileUserList)
+            val jsonListFile = File(fileUserList)
             // 상위 디렉토리 보장
-            Util.isDirectoryExists(userListFile.path)
-            if (userListFile.exists()) {
-                // 내용 비우기 (0바이트로 초기화)
-                userListFile.writeText("")
-                if (DEBUG_LOG) {
-                    println("사용자 리스트 파일 초기화(내용 비움): ${userListFile.path}")
+            Util.isDirectoryExists(jsonListFile.path)
+
+            // 기존 TXT 파일이 존재하면 JSON으로 마이그레이션
+            val legacyTxtPath = getDatabasePath("db/user_list.txt", true)
+            val legacyTxtFile = File(legacyTxtPath)
+            if (!jsonListFile.exists() && legacyTxtFile.exists()) {
+                if (DEBUG_LOG) println("[MIGRATE] user_list.txt -> user_list.json 변환 시도")
+                try {
+                    val lines = legacyTxtFile.readLines().filter { it.isNotBlank() }
+                    val jsonArray = buildJsonArray {
+                        lines.forEach { line ->
+                            val parts = line.split(",")
+                            if (parts.size >= 7) {
+                                add(
+                                    buildJsonObject {
+                                        put("index", parts[0].trim().toIntOrNull() ?: 0)
+                                        put("vehicleNumber", parts[1].trim())
+                                        put("registrationDate", parts[2].trim())
+                                        put("contact", parts[3].trim())
+                                        put("name", parts[4].trim())
+                                        put("remarks", parts[5].trim())
+                                        put("dbName", parts[6].trim())
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    jsonListFile.writeText(Json.encodeToString(JsonElement.serializer(), jsonArray))
+                    // 마이그레이션 후 구 파일 삭제(무시 가능)
+                    try { legacyTxtFile.delete() } catch (_: Exception) {}
+                    if (DEBUG_LOG) println("[MIGRATE] 변환 완료: ${jsonListFile.path}")
+                } catch (me: Exception) {
+                    println("[ERROR] user_list.txt 마이그레이션 실패: ${me.message}")
+                    me.printStackTrace()
+                    // 실패 시라도 빈 JSON 파일 보장
+                    jsonListFile.writeText("[]")
+                }
+                return
+            }
+
+            if (jsonListFile.exists()) {
+                // 유효한 JSON인지 확인, 비어있으면 []로 초기화
+                val text = jsonListFile.readText()
+                if (text.isBlank()) {
+                    jsonListFile.writeText("[]")
+                    if (DEBUG_LOG) println("사용자 리스트 JSON 초기화([]): ${jsonListFile.path}")
                 }
             } else {
-                userListFile.createNewFile()
+                jsonListFile.writeText("[]")
                 if (DEBUG_LOG) {
-                    println("사용자 리스트 파일이 없어 새로 생성: ${userListFile.path}")
+                    println("사용자 리스트 JSON 파일이 없어 새로 생성([]): ${jsonListFile.path}")
                 }
             }
         } catch (e: Exception) {
@@ -342,14 +400,41 @@ object LocalFileManager {
     fun loadUserList(): List<String> {
         return try {
             val userListFile = openFile(FileType.USER_LIST) ?: return emptyList()
-            val userList = userListFile.readLines().filter { it.trim().isNotEmpty() }
-            
+
+            // 파일이 없거나 비어 있으면 초기화 보장
+            if (!userListFile.exists() || userListFile.readText().isBlank()) {
+                initializeUserListFile()
+            }
+
+            val text = userListFile.readText().trim()
+
+            val csvLines: List<String> = if (text.isBlank()) {
+                emptyList()
+            } else if (text.startsWith("[")) {
+                // JSON 배열 파싱 -> CSV 라인으로 변환해 기존 호출부와 호환 유지
+                val arr = Json.parseToJsonElement(text).jsonArray
+                arr.map { el ->
+                    val obj = el.jsonObject
+                    val index = obj["index"]?.jsonPrimitive?.intOrNull ?: 0
+                    val vehicleNumber = obj["vehicleNumber"]?.jsonPrimitive?.contentOrNull ?: ""
+                    val registrationDate = obj["registrationDate"]?.jsonPrimitive?.contentOrNull ?: ""
+                    val contact = obj["contact"]?.jsonPrimitive?.contentOrNull ?: ""
+                    val name = obj["name"]?.jsonPrimitive?.contentOrNull ?: ""
+                    val remarks = obj["remarks"]?.jsonPrimitive?.contentOrNull ?: ""
+                    val dbName = obj["dbName"]?.jsonPrimitive?.contentOrNull ?: ""
+                    listOf(index.toString(), vehicleNumber, registrationDate, contact, name, remarks, dbName).joinToString(",")
+                }
+            } else {
+                // 혹시 남아있는 구 포맷 텍스트가 들어온 경우 라인 분리
+                text.lines().filter { it.isNotBlank() }
+            }
+
             if (DEBUG_LOG) {
-                println("사용자 리스트 로드 완료: ${userList.size}개 항목")
+                println("사용자 리스트 로드 완료: ${csvLines.size}개 항목(JSON)")
             }
 
             closeFile(userListFile)
-            userList
+            csvLines
         } catch (e: Exception) {
             println("사용자 리스트 로드 오류: ${e.message}")
             e.printStackTrace()

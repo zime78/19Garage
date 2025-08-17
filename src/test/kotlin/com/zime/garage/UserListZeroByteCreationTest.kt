@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 
 class UserListZeroByteCreationTest {
 
-    private val userListPath: String = Util.getDatabasePath("db/user_list.txt", true)
+    private val userListPath: String = Util.getDatabasePath("db/user_list.json", true)
     private val userListFile: File = File(userListPath)
 
     companion object {
@@ -41,7 +41,7 @@ class UserListZeroByteCreationTest {
     }
 
     @Test
-    fun `loadUserList creates zero-byte user_list when missing`() {
+    fun `loadUserList creates empty json array when missing`() {
         // pre-condition: 파일이 존재하지 않음
         assertTrue(!userListFile.exists(), "사전 조건 실패: user_list 파일이 존재하면 안 됩니다")
 
@@ -49,8 +49,8 @@ class UserListZeroByteCreationTest {
         // 반환은 빈 리스트여야 함
         assertTrue(list.isEmpty(), "초기 로드 시 빈 리스트여야 합니다")
 
-        // 파일이 생성되며 0바이트인지 확인
+        // 파일이 생성되며 내용은 빈 JSON 배열 [] 이어야 함
         assertTrue(userListFile.exists(), "loadUserList 호출 후 user_list 파일이 생성되어야 합니다")
-        assertEquals(0L, userListFile.length(), "loadUserList는 존재하지 않는 경우 0바이트 파일을 생성합니다")
+        assertEquals("[]", userListFile.readText().trim(), "loadUserList는 존재하지 않는 경우 빈 JSON 배열([])로 초기화합니다")
     }
 }
