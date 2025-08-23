@@ -1,4 +1,3 @@
-
 <h1>개요</h1>
 <p>
 해당 프로젝트는 일구 형님의 자동차정비 차량 관리를 위한 프로그램 입니다.<br>
@@ -17,6 +16,30 @@ GitHub : https://github.com/zime78/19Garage  <br>
 <img src="https://github.com/user-attachments/assets/17b565fc-aef8-4bdf-9f31-af64aa10add1">
 <br>
 <img width="712" alt="image" src="https://github.com/user-attachments/assets/a9a8679b-430e-451b-9f1b-1e9ead087852">
+<br>
+<br>
+<h1>작업 결과</h1>
+<br>
+<img width="2568" height="1448" alt="screen01" src="https://github.com/user-attachments/assets/fa1dcf7c-07a0-4711-b7fe-d0725538cc7d" />
+<img width="827" height="679" alt="screen02" src="https://github.com/user-attachments/assets/9db72528-48d1-4fbb-9635-75aa38d8fafe" />
+<img width="823" height="583" alt="screen04" src="https://github.com/user-attachments/assets/405686be-8fe0-43ee-a413-deee4f3dc20c" />
+<img width="2565" height="623" alt="screen05" src="https://github.com/user-attachments/assets/3e9ba535-d8ed-45de-861d-13e497f4735c" />
+<img width="2223" height="644" alt="screen07" src="https://github.com/user-attachments/assets/226dc505-b5f4-452c-b7f6-24601fe9e8c1" />
+<img width="1922" height="922" alt="screen09" src="https://github.com/user-attachments/assets/2b6da7f2-b930-4148-af26-0e636544633e" />
+<img width="595" height="734" alt="screen10" src="https://github.com/user-attachments/assets/6e4b1697-a57f-415c-9c29-7a4a728fc991" />
+<img width="1915" height="286" alt="screen11" src="https://github.com/user-attachments/assets/3b075216-9919-45d9-800d-6633ba575fe6" />
+
+<img width="430" height="203" alt="screen13" src="https://github.com/user-attachments/assets/43dd281d-af19-421b-bf2c-d9ed36afca44" />
+<img width="332" height="173" alt="screen14" src="https://github.com/user-attachments/assets/a1cac2f5-2ff7-4cd6-9d94-44de1a5ce7e0" />
+<img width="641" height="253" alt="screen20" src="https://github.com/user-attachments/assets/eb3aa0bf-b318-4bce-b4c4-94952f39d8fd" />
+<img width="596" height="486" alt="screen21" src="https://github.com/user-attachments/assets/616ba0b8-077d-448f-9e29-8104606b3eff" />
+<img width="626" height="579" alt="screen22" src="https://github.com/user-attachments/assets/d1fe800b-5e85-4577-b835-170a278b0b57" />
+
+<img width="1029" height="324" alt="screen23" src="https://github.com/user-attachments/assets/20c3c15c-80ee-4b1d-b2b2-96e7acad5939" />
+<img width="587" height="268" alt="screen24" src="https://github.com/user-attachments/assets/17424e98-4039-45b0-9817-2b6ff97e2346" />
+
+
+
 
 
 ---
@@ -101,6 +124,7 @@ https://developer.android.com/develop/ui/compose/documentation?hl=ko <br>
 | [Notepad](https://github.com/JetBrains/compose-multiplatform/blob/master/examples/notepad)                   | Notepad, using the Composable Window API                 | Desktop               |
 | [IDEA plugin](https://github.com/JetBrains/compose-multiplatform/blob/master/examples/intellij-plugin)       | Plugin for IDEA using Compose for Desktop                | Desktop               |
 | [HTML based samples](https://github.com/JetBrains/compose-multiplatform/blob/master/examples/html/README.md) | Examples written with Compose HTML Library               |                       |
+
 
 
 
