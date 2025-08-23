@@ -21,19 +21,27 @@ object ResourceLoader {
      * 환경 변수가 없거나 읽기에 실패하면 기본값을 반환합니다.
      */
     private fun loadVersionFromProperties(): String {
+        fun combineVersion(name: String?, code: String?): String {
+            val n = name?.trim().orEmpty()
+            val cRaw = code?.trim().orEmpty()
+            // 숫자만 버전 코드로 인정 (CFBundleVersion 등도 숫자 문자열 권장)
+            val c = cRaw.takeIf { it.isNotEmpty() && it.all { ch -> ch.isDigit() } }
+            return when {
+                n.isEmpty() && c.isNullOrEmpty() -> "1.0.0"
+                n.isEmpty() -> "1.0.0"
+                c.isNullOrEmpty() || n == c -> n
+                else -> "$n($c)"
+            }
+        }
+
         return try {
             // 1) JVM 시스템 프로퍼티 우선 (-Dapp.version, -Dapp.versionCode)
             val sysVersionName = System.getProperty("app.version")?.takeIf { it.isNotBlank() }
             val sysVersionCode = System.getProperty("app.versionCode")?.takeIf { it.isNotBlank() }
-
-            if (!sysVersionName.isNullOrBlank() && !sysVersionCode.isNullOrBlank()) {
-                val combined = "$sysVersionName($sysVersionCode)"
+            if (!sysVersionName.isNullOrBlank() || !sysVersionCode.isNullOrBlank()) {
+                val combined = combineVersion(sysVersionName, sysVersionCode)
                 println("[INFO] 시스템 프로퍼티 버전 정보: $combined")
                 return combined
-            }
-            if (!sysVersionName.isNullOrBlank()) {
-                println("[INFO] 시스템 프로퍼티 버전 이름: $sysVersionName")
-                return sysVersionName
             }
 
             // 2) JAR Manifest의 Implementation-Version (패키징된 JAR에서 자동 설정될 수 있음)
@@ -52,37 +60,23 @@ object ResourceLoader {
                     if (!plistText.isNullOrBlank()) {
                         val shortVer = extractPlistValue(plistText, "CFBundleShortVersionString")
                         val buildVer = extractPlistValue(plistText, "CFBundleVersion")
-                        if (!shortVer.isNullOrBlank() && !buildVer.isNullOrBlank()) {
-                            val combined = "$shortVer($buildVer)"
-                            println("[INFO] macOS Info.plist 버전 정보: $combined")
-                            return combined
-                        }
-                        if (!shortVer.isNullOrBlank()) {
-                            println("[INFO] macOS Info.plist 버전 이름: $shortVer")
-                            return shortVer
-                        }
+                        val combined = combineVersion(shortVer, buildVer)
+                        println("[INFO] macOS Info.plist 버전 정보: $combined")
+                        return combined
                     }
                 }
             }
 
-            // 4) (이전 로직) 환경 변수 시도
-            val versionName = System.getenv("APP_VERSION")
-            val versionCode = System.getenv("APP_VERSION_CODE")
-
-            when {
-                !versionName.isNullOrBlank() && !versionCode.isNullOrBlank() -> {
-                    val combinedVersion = "$versionName($versionCode)"
-                    println("[INFO] 환경 변수 버전 정보: $combinedVersion")
-                    combinedVersion
-                }
-                !versionName.isNullOrBlank() -> {
-                    println("[INFO] 환경 변수 버전 이름: $versionName")
-                    versionName
-                }
-                else -> {
-                    println("[WARNING] 버전 정보를 찾을 수 없습니다. 기본값 사용")
-                    "1.0.0" // 기본값
-                }
+            // 4) 환경 변수 시도
+            val envVersionName = System.getenv("APP_VERSION")
+            val envVersionCode = System.getenv("APP_VERSION_CODE")
+            val combinedEnv = combineVersion(envVersionName, envVersionCode)
+            if (!envVersionName.isNullOrBlank() || !envVersionCode.isNullOrBlank()) {
+                println("[INFO] 환경 변수 버전 정보: $combinedEnv")
+                combinedEnv
+            } else {
+                println("[WARNING] 버전 정보를 찾을 수 없습니다. 기본값 사용")
+                "1.0.0" // 기본값
             }
         } catch (e: Exception) {
             println("[ERROR] 버전 정보 로드 중 오류 발생: ${e.message}. 기본값 사용")
@@ -121,7 +115,7 @@ object ResourceLoader {
         "tooltip_setting" to "내부 설정값을 변경합니다.",
         "tooltip_reload" to "추가한 고객 정보를 다시 읽습니다.\n고객 추가후 업데이트 안되었으면 눌러주세요.",
         "tooltip_version" to "앱 버전 정보입니다.",
-        
+
         // 설정 화면 관련 문자열
         "settings_title" to "설정",
         "version_title" to "버전",
@@ -133,10 +127,11 @@ object ResourceLoader {
         "version_unknown_version" to "알 수 없음"
     )
 
+
     fun getString(key: String): String {
         return properties[key] ?: error("Resource not found: $key")
     }
-    
+
     fun painterResource(resourcePath: String): Painter {
         return BitmapPainter(
             Image.makeFromEncoded(
