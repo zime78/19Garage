@@ -110,23 +110,23 @@ fun HomeView(onDataManagementClick: () -> Unit = {}, externalReloadTrigger: Int 
                             )
                         }
 
-                        //설정 이미지
-                        Box( // 중첩된 Box로 수직 중앙 정렬 및 오른쪽 여백 처리
-                            modifier = Modifier
-                                .wrapContentHeight()
-                                .padding(end = 10.dp), // 오른쪽 여백 10dp
-                            contentAlignment = Alignment.CenterEnd, // 박스 내부의 아이템을 오른쪽 끝에 배치
-                        ) {
-                            Image(
-                                painter = ResourceLoader.painterResource("img/icon_setting.png"),
-                                contentDescription = "Setting Image",
-                                modifier = Modifier
-                                    .size(35.dp)
-                                    .clickable(onClick = {
-                                        println("설정 아이콘 클릭됨")
-                                    })
-                            )
-                        }
+//                        //설정 이미지
+//                        Box( // 중첩된 Box로 수직 중앙 정렬 및 오른쪽 여백 처리
+//                            modifier = Modifier
+//                                .wrapContentHeight()
+//                                .padding(end = 10.dp), // 오른쪽 여백 10dp
+//                            contentAlignment = Alignment.CenterEnd, // 박스 내부의 아이템을 오른쪽 끝에 배치
+//                        ) {
+//                            Image(
+//                                painter = ResourceLoader.painterResource("img/icon_setting.png"),
+//                                contentDescription = "Setting Image",
+//                                modifier = Modifier
+//                                    .size(35.dp)
+//                                    .clickable(onClick = {
+//                                        println("설정 아이콘 클릭됨")
+//                                    })
+//                            )
+//                        }
 
 
                     }

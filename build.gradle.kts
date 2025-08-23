@@ -23,6 +23,7 @@ repositories {
 
 dependencies {
     implementation(compose.desktop.currentOs)
+    implementation(compose.components.resources)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
 //    implementation("org.jetbrains.compose.ui:ui:1.6.0")
 //    implementation ("org.jetbrains.androidx.lifecycle:lifecycle-common:2.8.4")
