@@ -9,10 +9,10 @@ plugins {
 }
 
 group = "com.zime"
-version = "1.0.2" // 버전 업데이트
+version = "1.0.3" // 버전 업데이트
 
 // 버전 코드 관리
-val versionCode = 2
+val versionCode = 3
 val versionName = version.toString()
 
 repositories {
