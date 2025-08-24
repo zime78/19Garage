@@ -48,15 +48,23 @@ GitHub : https://github.com/zime78/19Garage  <br>
 <h1>참고 자료</h1>
 <h3>빌드 방법</h3>
 
-어플리케이션을 JVM 패키지로 빌드하려면:********
-```kotlin
-./gradlew package
+어플리케이션을 현재 OS용 패키지로 빌드하려면:
+```bash
+./gradlew packageDistributionForCurrentOS
 ```
 
-네이티브 실행 파일을 생성하려면:
-```kotlin
-./gradlew package -t native
+배포용 디렉터리를 생성하려면(각 OS별 실행 파일/런처 포함):
+```bash
+./gradlew createDistributable
 ```
+배포용 DMG 로생성
+```bash
+./gradlew packageDmg
+```
+
+
+
+참고: Gradle의 -t 옵션은 "continuous build"를 의미하며 태스크 이름이 아닙니다. "native"라는 태스크는 존재하지 않으므로 사용하지 마세요.
 
 이 명령어들은 각 플랫폼에 맞는 실행 파일을 빌드합니다. macOS, Windows, Linux 모두 지원됩니다.
 

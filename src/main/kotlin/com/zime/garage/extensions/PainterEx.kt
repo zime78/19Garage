@@ -12,3 +12,11 @@ object AboutIcon : Painter() {
 //        drawCircle(Color(0xFFFFA500))
     }
 }
+
+object HelpfIcon : Painter() {
+    override val intrinsicSize = Size(1f, 1f)
+    override fun DrawScope.onDraw() {
+        drawOval(Color(0xF12FA500))
+//        drawCircle(Color(0xFFFFA500))
+    }
+}

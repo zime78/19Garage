@@ -120,3 +120,4 @@ class ClassificationModelTest {
 
 ## 5) 설정
 - 모든 주석과 설명은 한국어로 작성합니다.
+- 문서 개선/업데이트가 필요하면 .junie/guidelines.md를 계속 확장해 주세요.

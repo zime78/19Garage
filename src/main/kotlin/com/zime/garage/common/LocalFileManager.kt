@@ -1,7 +1,14 @@
 package com.zime.garage.common
 
 import com.zime.garage.common.Content.DEBUG_LOG
-import com.zime.garage.db.viewModel.*
+import com.zime.garage.ui.data.model.EngineModel
+import com.zime.garage.ui.data.model.ImprovementModel
+import com.zime.garage.ui.data.model.Items2Model
+import com.zime.garage.ui.data.model.Items3Model
+import com.zime.garage.ui.data.model.ItemsModel
+import com.zime.garage.ui.data.model.VehicleFormatModel
+import com.zime.garage.ui.data.model.VehicleModelModel
+import com.zime.garage.ui.record.model.UserModel
 import com.zime.garage.utils.Util
 import com.zime.garage.utils.Util.Companion.getDatabasePath
 import kotlinx.coroutines.runBlocking
@@ -9,6 +16,13 @@ import java.io.File
 import kotlinx.serialization.json.*
 import java.text.SimpleDateFormat
 import java.util.*
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+import java.util.zip.ZipInputStream
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 /**
  * 로컬 파일 관리자
@@ -43,7 +57,7 @@ object LocalFileManager {
         ITEMS3,
         /** 사용자 데이터 파일 */
         USER_DATA, // 사용자 데이터 파일 (user_%s.db)
-        USER_LIST // 사용자 리스트 파일 (user_list.txt)
+        USER_LIST // 사용자 리스트 파일 (user_list.json)
     }
 
     // === 데이터베이스 파일 경로 설정 ===
@@ -63,7 +77,7 @@ object LocalFileManager {
 
     /** 사용자 데이터 파일 경로 (user_%s.db), 사용자 리스트 파일 경로 */
     private val fileUserData = getDatabasePath("db/user/user_%s.db", true)
-    private val fileUserList = getDatabasePath("db/user_list.txt", true)
+    private val fileUserList = getDatabasePath("db/user_list.json", true)
 
     /** 개별 차량 작업 기록 파일 경로 (%s.json) - 차량번호를 파일명으로 사용 */
     private val fileUserRecord = getDatabasePath("db/userDB/%s.json", true)
@@ -186,6 +200,35 @@ object LocalFileManager {
     }
 
     /**
+     * 원자적 파일 쓰기 유틸리티
+     * - 동일 디렉토리의 임시 파일에 먼저 기록한 뒤, ATOMIC_MOVE로 대상 파일로 교체
+     * - 일부 파일시스템에서 ATOMIC_MOVE 미지원 시 REPLACE_EXISTING으로 폴백
+     */
+    private fun writeTextAtomic(targetFile: File, content: String) {
+        try {
+            val target = targetFile.toPath()
+            val dir = target.parent
+            if (dir != null) Files.createDirectories(dir)
+            val tmp = Files.createTempFile(dir, targetFile.name, ".tmp")
+            Files.writeString(tmp, content)
+            try {
+                Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            } catch (e: java.nio.file.AtomicMoveNotSupportedException) {
+                Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING)
+            } catch (e: Exception) {
+                // 이동 실패 시 임시 파일 제거 시도 후 재던짐
+                try { Files.deleteIfExists(tmp) } catch (_: Exception) {}
+                throw e
+            }
+        } catch (e: Exception) {
+            println("[ERROR] 원자적 쓰기 실패(${targetFile.path}): ${e.message}")
+            e.printStackTrace()
+            // 안전상 실패 시 기존 writeText로 최후의 수단 사용
+            try { targetFile.writeText(content) } catch (_: Exception) {}
+        }
+    }
+
+    /**
      * 파일 전체 내용 로그 출력 함수
      * 
      * 지정된 파일의 모든 내용을 한 줄씩 콘솔에 출력합니다.
@@ -228,21 +271,39 @@ object LocalFileManager {
                 return -1
             }
 
-            // 기존 사용자 리스트 로드하여 다음 인덱스 계산
-            val existingUsers = loadUserList()
-            val nextIndex = if (existingUsers.isEmpty()) 1 else existingUsers.maxOf { it.split(",")[0].toInt() } + 1
+            // 현재 JSON 배열 읽기
+            val text = if (userListFile.exists()) userListFile.readText().trim() else ""
+            val arr: MutableList<JsonObject> = if (text.isNotBlank() && text.startsWith("[")) {
+                Json.parseToJsonElement(text).jsonArray.map { it.jsonObject }.toMutableList()
+            } else {
+                mutableListOf()
+            }
+
+            // 다음 인덱스 계산
+            val nextIndex = if (arr.isEmpty()) 1 else (arr.maxOf { it["index"]?.jsonPrimitive?.intOrNull ?: 0 } + 1)
 
             // 사용자 데이터베이스 파일명 생성
             val dbFileName = "user_$vehicleNumber.db"
 
-            // 새 사용자 정보 라인 생성 (인덱스, 차량번호, 등록일자, 연락처, 이름, 비고, DB파일명)
-            val userLine = "$nextIndex,$vehicleNumber,$registrationDate,$contact,$name,$remarks,$dbFileName"
+            // 새 사용자 JSON 객체 생성
+            val newObj = buildJsonObject {
+                put("index", nextIndex)
+                put("vehicleNumber", vehicleNumber)
+                put("registrationDate", registrationDate)
+                put("contact", contact)
+                put("name", name)
+                put("remarks", remarks)
+                put("dbName", dbFileName)
+            }
 
-            // 파일에 추가
-            userListFile.appendText("$userLine\n")
+            arr.add(newObj)
+
+            // JSON 파일로 저장
+            val newJson = buildJsonArray { arr.forEach { add(it) } }
+            writeTextAtomic(userListFile, Json.encodeToString(JsonElement.serializer(), newJson))
 
             if (DEBUG_LOG) {
-                println("사용자 리스트에 추가됨: $userLine")
+                println("사용자 리스트(JSON)에 추가됨: $newObj")
             }
 
             closeFile(userListFile)
@@ -254,6 +315,114 @@ object LocalFileManager {
         }
     }
 
+    fun initializeFiles(){
+        // DB 폴더 초기화: backup 폴더는 제외, user / userDB 폴더 내 파일만 삭제
+        try {
+            // db/user 폴더 내 파일 모두 삭제 (폴더는 유지)
+            run {
+                val sampleUserFile = File(fileUserData.format("sample"))
+                val userDir = sampleUserFile.parentFile
+                if (userDir != null && userDir.exists() && userDir.isDirectory) {
+                    userDir.listFiles()?.forEach { f ->
+                        if (f.isFile) {
+                            val ok = f.delete()
+                            if (!ok) println("[WARNING] db/user 파일 삭제 실패: ${f.name}")
+                        }
+                    }
+                    if (DEBUG_LOG) println("[DEBUG] db/user 폴더 파일 초기화 완료")
+                }
+            }
+
+            // db/userDB 폴더 내 파일 모두 삭제 (폴더는 유지)
+            run {
+                val sampleUserDbFile = File(fileUserRecord.format("sample"))
+                val userDbDir = sampleUserDbFile.parentFile
+                if (userDbDir != null && userDbDir.exists() && userDbDir.isDirectory) {
+                    userDbDir.listFiles()?.forEach { f ->
+                        if (f.isFile) {
+                            val ok = f.delete()
+                            if (!ok) println("[WARNING] db/userDB 파일 삭제 실패: ${f.name}")
+                        }
+                    }
+                    if (DEBUG_LOG) println("[DEBUG] db/userDB 폴더 파일 초기화 완료")
+                }
+            }
+        } catch (e: Exception) {
+            println("[ERROR] DB 폴더 초기화 중 오류: ${e.message}")
+            e.printStackTrace()
+        }
+
+        // 사용자 리스트 파일 초기화
+        initializeUserListFile()
+    }
+
+    /**
+     *  사용자 리스트 파일 보장: 없으면 빈 파일 생성
+     */
+    fun initializeUserListFile(){
+        // 사용자 리스트 파일 초기화: JSON 배열로 초기화, 또는 기존 TXT를 JSON으로 마이그레이션
+        try {
+            val jsonListFile = File(fileUserList)
+            // 상위 디렉토리 보장
+            Util.isDirectoryExists(jsonListFile.path)
+
+            // 기존 TXT 파일이 존재하면 JSON으로 마이그레이션
+            val legacyTxtPath = getDatabasePath("db/user_list.txt", true)
+            val legacyTxtFile = File(legacyTxtPath)
+            if (!jsonListFile.exists() && legacyTxtFile.exists()) {
+                if (DEBUG_LOG) println("[MIGRATE] user_list.txt -> user_list.json 변환 시도")
+                try {
+                    val lines = legacyTxtFile.readLines().filter { it.isNotBlank() }
+                    val jsonArray = buildJsonArray {
+                        lines.forEach { line ->
+                            val parts = line.split(",")
+                            if (parts.size >= 7) {
+                                add(
+                                    buildJsonObject {
+                                        put("index", parts[0].trim().toIntOrNull() ?: 0)
+                                        put("vehicleNumber", parts[1].trim())
+                                        put("registrationDate", parts[2].trim())
+                                        put("contact", parts[3].trim())
+                                        put("name", parts[4].trim())
+                                        put("remarks", parts[5].trim())
+                                        put("dbName", parts[6].trim())
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    writeTextAtomic(jsonListFile, Json.encodeToString(JsonElement.serializer(), jsonArray))
+                    // 마이그레이션 후 구 파일 삭제(무시 가능)
+                    try { legacyTxtFile.delete() } catch (_: Exception) {}
+                    if (DEBUG_LOG) println("[MIGRATE] 변환 완료: ${jsonListFile.path}")
+                } catch (me: Exception) {
+                    println("[ERROR] user_list.txt 마이그레이션 실패: ${me.message}")
+                    me.printStackTrace()
+                    // 실패 시라도 빈 JSON 파일 보장
+                    writeTextAtomic(jsonListFile, "[]")
+                }
+                return
+            }
+
+            if (jsonListFile.exists()) {
+                // 유효한 JSON인지 확인, 비어있으면 []로 초기화
+                val text = jsonListFile.readText()
+                if (text.isBlank()) {
+                    writeTextAtomic(jsonListFile, "[]")
+                    if (DEBUG_LOG) println("사용자 리스트 JSON 초기화([]): ${jsonListFile.path}")
+                }
+            } else {
+                writeTextAtomic(jsonListFile, "[]")
+                if (DEBUG_LOG) {
+                    println("사용자 리스트 JSON 파일이 없어 새로 생성([]): ${jsonListFile.path}")
+                }
+            }
+        } catch (e: Exception) {
+            println("사용자 리스트 파일 초기화/생성 오류: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+
     /**
      * 사용자 리스트 파일 로드
      * 
@@ -261,22 +430,59 @@ object LocalFileManager {
      */
     fun loadUserList(): List<String> {
         return try {
-            val userListFile = openFile(FileType.USER_LIST)
-            if (userListFile == null || !userListFile.exists()) {
-                if (DEBUG_LOG) {
-                    println("사용자 리스트 파일이 존재하지 않음")
-                }
-                return emptyList()
+            val userListFile = openFile(FileType.USER_LIST) ?: return emptyList()
+
+            // 파일이 없으면 초기화 보장, 비어있는 경우는 잠시 후 재시도하여 레이스 회피
+            if (!userListFile.exists()) {
+                initializeUserListFile()
             }
 
-            val userList = userListFile.readLines().filter { it.trim().isNotEmpty() }
-            
+            var text = userListFile.readText().trim()
+            if (text.isBlank()) {
+                val lastMod = userListFile.lastModified()
+                var attempts = 0
+                while (attempts < 3 && text.isBlank()) {
+                    try { Thread.sleep(50) } catch (_: InterruptedException) {}
+                    text = userListFile.readText().trim()
+                    attempts++
+                }
+                if (text.isBlank()) {
+                    val now = System.currentTimeMillis()
+                    // 최근에 수정된 빈 파일이면 초기화로 덮어쓰지 않고 빈 리스트 반환을 허용(동시 쓰기 보호)
+                    if (now - lastMod > 1000) {
+                        initializeUserListFile()
+                        text = userListFile.readText().trim()
+                    }
+                }
+            }
+
+            val csvLines: List<String> = if (text.isBlank()) {
+                emptyList()
+            } else if (text.startsWith("[")) {
+                // JSON 배열 파싱 -> CSV 라인으로 변환해 기존 호출부와 호환 유지
+                val arr = Json.parseToJsonElement(text).jsonArray
+                arr.map { el ->
+                    val obj = el.jsonObject
+                    val index = obj["index"]?.jsonPrimitive?.intOrNull ?: 0
+                    val vehicleNumber = obj["vehicleNumber"]?.jsonPrimitive?.contentOrNull ?: ""
+                    val registrationDate = obj["registrationDate"]?.jsonPrimitive?.contentOrNull ?: ""
+                    val contact = obj["contact"]?.jsonPrimitive?.contentOrNull ?: ""
+                    val name = obj["name"]?.jsonPrimitive?.contentOrNull ?: ""
+                    val remarks = obj["remarks"]?.jsonPrimitive?.contentOrNull ?: ""
+                    val dbName = obj["dbName"]?.jsonPrimitive?.contentOrNull ?: ""
+                    listOf(index.toString(), vehicleNumber, registrationDate, contact, name, remarks, dbName).joinToString(",")
+                }
+            } else {
+                // 혹시 남아있는 구 포맷 텍스트가 들어온 경우 라인 분리
+                text.lines().filter { it.isNotBlank() }
+            }
+
             if (DEBUG_LOG) {
-                println("사용자 리스트 로드 완료: ${userList.size}개 항목")
+                println("사용자 리스트 로드 완료: ${csvLines.size}개 항목(JSON)")
             }
 
             closeFile(userListFile)
-            userList
+            csvLines
         } catch (e: Exception) {
             println("사용자 리스트 로드 오류: ${e.message}")
             e.printStackTrace()
@@ -292,7 +498,6 @@ object LocalFileManager {
      * @param date 등록 날짜
      * @param name 이름
      * @param contact 연락처
-     * @param remarks 비고
      * @param dbName 데이터베이스 파일명
      * @return 저장 성공 여부
      */
@@ -302,8 +507,11 @@ object LocalFileManager {
         date: String,
         name: String,
         contact: String,
-        remarks: String,
-        dbName: String
+        dbName: String,
+        model: String = "",
+        vehicleFormat: String = "",
+        engine: String = "",
+        manufactureYear: String = ""
     ): Boolean {
         return try {
             val userDbFile = openFile(FileType.USER_DATA, vehicleNumber)
@@ -319,8 +527,12 @@ object LocalFileManager {
                 put("registrationDate", date)
                 put("name", name)
                 put("contact", contact)
-                put("remarks", remarks)
                 put("dbName", dbName)
+                put("model", model)
+                put("vehicleFormat", vehicleFormat)
+                put("engine", engine)
+                put("manufactureYear", manufactureYear)
+                //추가시간
                 put("createdAt", SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.KOREA).format(Date()))
             }
 
@@ -610,6 +822,7 @@ object LocalFileManager {
     /**
      * 차량별 작업 기록 파일에 레코드 1건을 추가합니다.
      * amount(금액)는 단가*수량으로 계산(실패 시 공란)
+     * 동일 내용의 작업기록이 이미 존재하면 중복 저장을 방지합니다(no/amount 제외 동일성 비교).
      */
     fun addUserRecordLine(
         carNumber: String,
@@ -638,6 +851,45 @@ object LocalFileManager {
             } else {
                 mutableListOf()
             }
+
+            // 1) 중복 검사(no/amount 제외 동일성 비교)
+            fun norm(s: String): String = s.trim()
+            val newFields = listOf(
+                norm(date), norm(vehicleNumber), norm(model), norm(vehicleFormat), norm(engine),
+                norm(manufactureYear), norm(mileage), norm(category1), norm(category2), norm(category3),
+                norm(item), norm(quantity), norm(unitPrice), norm(name), norm(contact), norm(remarks)
+            )
+
+            val isDuplicate = currentArray.any { el ->
+                try {
+                    val obj = el.jsonObject
+                    val fields = listOf(
+                        obj["date"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["vehicleNumber"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["model"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["vehicleFormat"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["engine"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["manufactureYear"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["mileage"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["category1"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["category2"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["category3"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["item"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["quantity"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["unitPrice"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["name"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["contact"]?.jsonPrimitive?.contentOrNull ?: "",
+                        obj["remarks"]?.jsonPrimitive?.contentOrNull ?: "",
+                    ).map(::norm)
+                    fields == newFields
+                } catch (_: Exception) { false }
+            }
+            if (isDuplicate) {
+                // 중복 저장 방지: 추가하지 않고 false 반환
+                return false
+            }
+
+            // 2) 신규 추가
             val nextNo = (currentArray.size + 1).toString()
             // 금액 계산
             val amount = try {
@@ -878,10 +1130,11 @@ object LocalFileManager {
 
     /**
      * 사용자 리스트 파일 삭제 함수
+     * 외부에서 호출 가능하도록 공개 메서드로 제공
      * 
      * @return 삭제 성공 여부
      */
-    private fun deleteUserListFile(): Boolean {
+    fun deleteUserListFile(): Boolean {
         return try {
             val userListFile = openFile(FileType.USER_LIST)
             if (userListFile != null && userListFile.exists()) {
@@ -928,6 +1181,217 @@ object LocalFileManager {
             }
         } catch (e: Exception) {
             println("[ERROR] 사용자 DB 파일 삭제 오류: ${e.message}")
+            e.printStackTrace()
+            false
+        }
+    }
+
+    /**
+     * 개별 사용자 기록(JSON) 파일 삭제 함수
+     * @param vehicleNumber 차량 번호
+     */
+    private fun deleteUserRecordDatabase(vehicleNumber: String): Boolean {
+        return try {
+            val path = String.format(fileUserRecord, vehicleNumber)
+            val file = File(path)
+            if (file.exists()) {
+                val deleted = file.delete()
+                if (deleted && DEBUG_LOG) {
+                    println("[DEBUG] 사용자 기록 파일 삭제 완료: ${file.name}")
+                }
+                deleted
+            } else {
+                if (DEBUG_LOG) println("[DEBUG] 사용자 기록 파일이 존재하지 않음: ${file.name}")
+                true
+            }
+        } catch (e: Exception) {
+            println("[ERROR] 사용자 기록 파일 삭제 오류: ${e.message}")
+            e.printStackTrace()
+            false
+        }
+    }
+
+    /**
+     * 특정 차량번호에 해당하는 고객을 삭제합니다.
+     * - user_list.json에서 해당 항목 제거 후 저장
+     * - 옵션에 따라 개인 DB 및 기록 파일 삭제
+     */
+    fun removeUser(vehicleNumber: String, deleteDb: Boolean = true, deleteRecords: Boolean = true): Boolean {
+        try {
+            // 1) user_list.json에서 제거
+            val listFile = openFile(FileType.USER_LIST) ?: return false
+            val raw = listFile.readText().ifBlank { "[]" }
+            val arr = Json.parseToJsonElement(raw).jsonArray
+            val newArr = buildJsonArray {
+                arr.forEach { el ->
+                    val obj = el.jsonObject
+                    val vn = obj["vehicleNumber"]?.jsonPrimitive?.contentOrNull ?: ""
+                    if (!vn.equals(vehicleNumber, ignoreCase = true)) {
+                        add(obj)
+                    }
+                }
+            }
+            writeTextAtomic(listFile, Json.encodeToString(JsonElement.serializer(), newArr))
+            closeFile(listFile)
+
+            // 2) 개별 파일 삭제 옵션 처리
+            var ok = true
+            if (deleteDb) ok = ok && deleteUserDatabase(vehicleNumber)
+            if (deleteRecords) ok = ok && deleteUserRecordDatabase(vehicleNumber)
+
+            if (DEBUG_LOG) println("[INFO] 사용자 삭제 완료: $vehicleNumber (ok=$ok)")
+            return ok
+        } catch (e: Exception) {
+            println("[ERROR] 사용자 삭제 중 오류: ${e.message}")
+            e.printStackTrace()
+            return false
+        }
+    }
+
+    /**
+     * DB 폴더를 zip으로 백업합니다.
+     * - 백업 위치: db/backup
+     * - 파일명: 프로젝트이름_yyyyMMdd_HHmmss.zip (프로젝트이름은 "19Garage")
+     * - 최대 보관 개수: 기본 100개, 초과 시 오래된 파일부터 삭제
+     */
+    fun backupDatabase(maxBackups: Int = 100, projectName: String = "19Garage"): File? {
+        try {
+            // db 루트와 backup 디렉터리 경로 계산
+            val dbRoot = File(fileVehicleModel).parentFile // vehicleModel.txt가 위치한 디렉터리를 DB 루트로 간주
+            val backupDir = File(dbRoot, "backup")
+
+            if (!dbRoot.exists() || !dbRoot.isDirectory) {
+                println("[ERROR] 백업 실패: DB 디렉터리가 존재하지 않습니다. path=${dbRoot.absolutePath}")
+                return null
+            }
+
+            if (!backupDir.exists()) {
+                backupDir.mkdirs()
+            }
+
+            // 파일명 생성: 프로젝트명_yyyyMMdd_HHmmss.zip
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.KOREA).format(Date())
+            val zipFile = File(backupDir, "${projectName}_${timestamp}.zip")
+
+            // Zip 생성 (backup 디렉터리는 제외)
+            FileOutputStream(zipFile).use { fos ->
+                ZipOutputStream(fos).use { zos ->
+                    zipDirectoryRecursively(
+                        source = dbRoot,
+                        baseDir = dbRoot,
+                        zos = zos,
+                        excludeDir = backupDir
+                    )
+                }
+            }
+
+            if (DEBUG_LOG) {
+                println("[DEBUG] 백업 생성 완료: ${zipFile.absolutePath}")
+            }
+
+            // 최대 보관 개수 유지: 오래된 파일부터 삭제
+            pruneBackups(backupDir, maxBackups)
+
+            return zipFile
+        } catch (e: Exception) {
+            println("[ERROR] 백업 생성 중 오류: ${e.message}")
+            e.printStackTrace()
+            return null
+        }
+    }
+
+    /**
+     * 디렉터리를 재귀적으로 순회하여 ZipOutputStream에 추가합니다.
+     * excludeDir 하위 경로는 제외합니다.
+     */
+    private fun zipDirectoryRecursively(source: File, baseDir: File, zos: ZipOutputStream, excludeDir: File) {
+        val files = source.listFiles() ?: return
+        for (file in files) {
+            // backup 디렉터리 제외
+            if (file.canonicalPath.startsWith(excludeDir.canonicalPath)) {
+                continue
+            }
+            if (file.isDirectory) {
+                zipDirectoryRecursively(file, baseDir, zos, excludeDir)
+            } else {
+                val relativePath = baseDir.toURI().relativize(file.toURI()).path
+                val entry = ZipEntry(relativePath)
+                zos.putNextEntry(entry)
+                FileInputStream(file).use { fis ->
+                    fis.copyTo(zos)
+                }
+                zos.closeEntry()
+            }
+        }
+    }
+
+    /**
+     * 백업 보관 개수를 maxBackups로 유지합니다. 초과분은 오래된 파일부터 삭제합니다.
+     */
+    private fun pruneBackups(backupDir: File, maxBackups: Int) {
+        val zipFiles = backupDir.listFiles { f -> f.isFile && f.name.lowercase(Locale.getDefault()).endsWith(".zip") }
+            ?.sortedBy { it.lastModified() }
+            ?: return
+        val excess = zipFiles.size - maxBackups
+        if (excess > 0) {
+            for (i in 0 until excess) {
+                val file = zipFiles[i]
+                val ok = file.delete()
+                if (!ok) {
+                    println("[WARNING] 오래된 백업 파일 삭제 실패: ${file.name}")
+                } else if (DEBUG_LOG) {
+                    println("[DEBUG] 오래된 백업 파일 삭제: ${file.name}")
+                }
+            }
+        }
+    }
+
+    /**
+     * 백업 zip 파일로부터 DB를 복원합니다.
+     * - 대상 경로: DB 루트 (vehicleModel.txt 상위 디렉터리)
+     * - zip-slip 보호 적용
+     * - 기존 파일을 덮어쓰기(존재하지 않는 파일은 새로 생성)
+     */
+    fun restoreDatabaseFromZip(zipFile: File): Boolean {
+        return try {
+            if (!zipFile.exists() || !zipFile.isFile) {
+                println("[ERROR] 복원 실패: zip 파일이 존재하지 않음: ${zipFile.absolutePath}")
+                return false
+            }
+            val dbRoot = File(fileVehicleModel).parentFile
+            if (!dbRoot.exists()) {
+                dbRoot.mkdirs()
+            }
+            val destCanonical = dbRoot.canonicalFile
+            FileInputStream(zipFile).use { fis ->
+                ZipInputStream(fis).use { zis ->
+                    var entry = zis.nextEntry
+                    while (entry != null) {
+                        val outFile = File(dbRoot, entry.name)
+                        val outCanonical = outFile.canonicalFile
+                        // zip-slip 방지: 대상 디렉터리 경로 밖으로 벗어나는지 체크
+                        if (!outCanonical.path.startsWith(destCanonical.path + File.separator) && outCanonical != destCanonical) {
+                            throw SecurityException("Zip entry escapes target dir: ${entry.name}")
+                        }
+                        if (entry.isDirectory) {
+                            outFile.mkdirs()
+                        } else {
+                            outFile.parentFile?.mkdirs()
+                            FileOutputStream(outFile).use { fos ->
+                                zis.copyTo(fos)
+                            }
+                        }
+                        zis.closeEntry()
+                        entry = zis.nextEntry
+                    }
+                }
+            }
+            if (DEBUG_LOG) {
+                println("[DEBUG] 복원 완료: ${zipFile.name} -> ${destCanonical.path}")
+            }
+            true
+        } catch (e: Exception) {
+            println("[ERROR] 복원 중 오류: ${e.message}")
             e.printStackTrace()
             false
         }

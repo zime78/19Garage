@@ -9,7 +9,11 @@ plugins {
 }
 
 group = "com.zime"
-version = "1.0.0" // 버전 업데이트
+version = "1.0.3" // 버전 업데이트
+
+// 버전 코드 관리
+val versionCode = 3
+val versionName = version.toString()
 
 repositories {
     mavenCentral()
@@ -19,6 +23,7 @@ repositories {
 
 dependencies {
     implementation(compose.desktop.currentOs)
+    implementation(compose.components.resources)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
 //    implementation("org.jetbrains.compose.ui:ui:1.6.0")
 //    implementation ("org.jetbrains.androidx.lifecycle:lifecycle-common:2.8.4")
@@ -30,6 +35,9 @@ dependencies {
     implementation(compose.material3)
     implementation(compose.materialIconsExtended)
     implementation(kotlin("stdlib"))
+
+    // Excel 파싱 라이브러리
+    implementation("org.apache.poi:poi-ooxml:5.4.0")
 
     // 테스트 의존성
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
@@ -53,6 +61,10 @@ compose.desktop {
                     put("NSDocumentsFolderUsageDescription", "이 애플리케이션은 문서 폴더에 파일을 읽고 저장하는데 필요합니다.")
                     put("NSDownloadsFolderUsageDescription", "이 애플리케이션은 다운로드 폴더에 파일을 읽고 저장하는데 필요합니다.")
                     put("NSDesktopFolderUsageDescription", "이 애플리케이션은 데스크톱 폴더에 파일을 읽고 저장하는데 필요합니다.")
+
+                    // 전체 버전 정보를 번들 정보에 포함
+                    put("CFBundleShortVersionString", versionName)
+                    put("CFBundleVersion", versionCode.toString())
                 }
 
                 // 인텔 및 애플 실리콘 맥 지원
@@ -64,6 +76,7 @@ compose.desktop {
 
 tasks.withType<JavaExec> {
     environment("APP_VERSION", project.version)  // 환경 변수로 버전 전달
+    environment("APP_VERSION_CODE", versionCode)  // 버전 코드
 }
 
 tasks.test {

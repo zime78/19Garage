@@ -1,361 +1,51 @@
 package com.zime.garage
 
-import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.*
+import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyShortcut
-import com.zime.garage.common.LocalFileManager
-import com.zime.garage.extensions.AboutIcon
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyShortcut
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.*
-import java.awt.Toolkit.*
-import com.zime.garage.common.ResourceLoader
-
-/**
- * 버튼 상태를 나타내는 열거형
- * 애플리케이션의 현재 화면 상태를 관리하는데 사용됩니다.
- */
-enum class ButtonState {
-    NONE,           // 기본 상태
-    VIEW_USER_ADD,  // 고객 추가 화면
-    BUTTON_2,       // 버튼 2 상태 (미사용)
-    BUTTON_3,       // 버튼 3 상태 (미사용)
-    BUTTON_4,       // 버튼 4 상태 (미사용)
-    BUTTON_DB,      // 데이터베이스 관련 상태 (미사용)
-}
-
-/**
- * 메인 홈 화면을 구성하는 컴포저블 함수
- * 고객 추가, 설정, 다시 읽기 기능과 사용자 목록을 표시합니다.
- */
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-@Preview
-fun HomeView(onDataManagementClick: () -> Unit = {}) {
-    var buttonState by remember { mutableStateOf(ButtonState.NONE) }
-    var reloadTrigger by remember { mutableStateOf(0) } // 리스트 갱신 트리거
-    var showReloadConfirmDialog by remember { mutableStateOf(false) } // 다시 읽기 확인 다이얼로그
-    var showSettingsDialog by remember { mutableStateOf(false) } // 설정 다이얼로그 표시 상태
-
-//    var text by remember { mutableStateOf("Hello, World!") }
-    MaterialTheme(
-        colors = lightColors(
-            primary = Color(0xFF2196F3),
-            primaryVariant = Color(0xFF1976D2),
-            secondary = Color(0xFF03A9F4),
-            secondaryVariant = Color(0xFF0288D1)
-        )
-    ) {
-        Column(){
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-//                    .background(Color.LightGray)
-//                .wrapContentWidth() // 너비를 자식의 너비에 맞추기
-//                .height(100.dp)
-                    .padding(start = 10.dp) // 패딩 추가
-                    .wrapContentHeight(), // 높이를 자식의 높이에 맞추기
-                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.Start), // 항목 간격 지정 및 왼쪽 정렬
-                verticalAlignment = Alignment.CenterVertically // 항목 수직 정렬
-            ) {
-                Button(onClick = {
-                    buttonState = ButtonState.VIEW_USER_ADD
-                }) {
-                    Text("고객 추가")
-                }
-
-                Button(onClick = {
-                    onDataManagementClick()
-                }) {
-                    Text("데이터 관리")
-                }
-
-//section 1번째 뒤 (다시읽기, 설정)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-//                        .background(Color.Red)// 배경색 지정
-                        .wrapContentHeight(), // 높이를 자식의 높이에 맞추기
-                    contentAlignment = Alignment.CenterEnd  // 오른쪽 끝(CenterEnd) 정렬
-                ){
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.Start),
-                        verticalAlignment = Alignment.CenterVertically // 항목 수직 정렬
-                    ) {
-
-                        //다시읽기
-                        Box( // 중첩된 Box로 수직 중앙 정렬 및 오른쪽 여백 처리
-                            modifier = Modifier
-                                .wrapContentHeight()
-//                                .background(Color.Blue)
-                                .padding(end = 10.dp), // 오른쪽 여백 10dp
-                            contentAlignment = Alignment.CenterEnd, // 박스 내부의 아이템을 오른쪽 끝에 배치
-                        ) {
-                            //다시 읽기.
-                            TooltipArea(
-                                tooltip = {
-                                    Surface(
-                                        color = Color.Gray,
-                                        contentColor = Color.White,
-                                        modifier = Modifier.padding(5.dp)
-                                    ) {
-                                        Text(
-                                            text =  ResourceLoader.getString("tooltip_reload"),
-                                            modifier = Modifier.padding(10.dp)
-                                        )
-                                    }
-                                }
-                            ) {
-                                Image(
-                                    painter = ResourceLoader.painterResource("img/icon_reload.png"),
-                                    contentDescription = "Setting Image",
-                                    modifier = Modifier
-                                        .size(35.dp) // 이미지 크기 지정 (width, height 동시 설정)
-                                        .clickable(onClick = {
-                                            println("다시 읽기 Clicked")
-                                            // 확인 다이얼로그 표시
-                                            showReloadConfirmDialog = true
-                                        }) // 클릭 이벤트 추가
-                                )
-                            }
-                        }
-
-                        //설정 이미지
-                        Box( // 중첩된 Box로 수직 중앙 정렬 및 오른쪽 여백 처리
-                            modifier = Modifier
-                                .wrapContentHeight()
-//                                .background(Color.Blue)
-                                .padding(end = 10.dp), // 오른쪽 여백 10dp
-                            contentAlignment = Alignment.CenterEnd, // 박스 내부의 아이템을 오른쪽 끝에 배치
-                        ) {
-                            TooltipArea(
-                                tooltip = {
-                                    Surface(
-                                        color = Color.Gray,
-                                        contentColor = Color.White,
-                                        modifier = Modifier.padding(5.dp)
-                                    ) {
-                                        Text(
-                                            text =  ResourceLoader.getString("tooltip_setting"),
-                                            modifier = Modifier.padding(10.dp)
-                                        )
-                                    }
-                                }
-                            ) {
-
-                                // 임시로 텍스트 버튼 사용 (리소스 로딩 문제 해결을 위해)
-                                Image(
-                                    painter = ResourceLoader.painterResource("img/icon_setting.png"),
-                                    contentDescription = "Setting Image",
-                                    modifier = Modifier
-                                        .size(35.dp) // 이미지 크기 지정 (width, height 동시 설정)
-                                        .clickable(onClick = {
-                                            println("설정 아이콘 클릭됨")
-                                            // 설정 다이얼로그 표시
-                                            showSettingsDialog = true
-                                        }) // 설정 아이콘 클릭 이벤트
-                                )
-                            }
-                        }
+import androidx.compose.ui.zIndex
+import com.zime.garage.common.LocalFileManager
+import com.zime.garage.extensions.AboutIcon
+import com.zime.garage.extensions.HelpfIcon
+import com.zime.garage.ui.data.DataManagementWindow
+import com.zime.garage.ui.excel.ExcelCombinedImporter
+import com.zime.garage.ui.excel.ExcelExporter
+import com.zime.garage.ui.manual.ManualWindow
+import com.zime.garage.ui.version.VersionDialog
+import com.zime.garage.utils.Util
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.awt.Toolkit.getDefaultToolkit
+import java.io.File
+import javax.swing.JFileChooser
+import javax.swing.filechooser.FileNameExtensionFilter
+import kotlinx.serialization.json.*
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 
-                    }
-                }
-            }
-
-//section 2번째 줄 (버전정보)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-//                    .background(Color.Yellow)  // 배경색 지정
-                    .height(40.dp),
-                contentAlignment = Alignment.CenterEnd  // 오른쪽 끝 정렬
-            ) {
-                val versionName = ResourceLoader.APP_VERSION
-                TooltipArea(
-                    tooltip = {
-                        Surface(
-                            color = Color.Gray,
-                            contentColor = Color.White,
-                            modifier = Modifier.padding(5.dp)
-                        ) {
-                            Text(
-                                text =  ResourceLoader.getString("tooltip_version"),
-                                modifier = Modifier.padding(10.dp)
-                            )
-                        }
-                    }
-                ) {
-                    //section 버전
-                    Text(
-                        "버전: $versionName (Alpha)",
-                        modifier = Modifier.padding(end = 20.dp)
-                    )
-                }
-            }
-
-
-//사용자 목록
-            MaterialTheme {
-                Surface {
-                    UserList(buttonState = buttonState, reloadTrigger = reloadTrigger)
-                }
-            }
-
-
-        }
-
-    }
-
-    when (buttonState) {
-        ButtonState.VIEW_USER_ADD -> {
-            ViewUserAdd(onCloseCallback = { buttonState = ButtonState.NONE })
-        } else -> {
-
-        }
-    }
-
-    // 다시 읽기 확인 다이얼로그
-    if (showReloadConfirmDialog) {
-        ReloadConfirmDialog(
-            onConfirm = {
-                showReloadConfirmDialog = false
-                // 파일에서 데이터 다시 읽기
-                println("[INFO] 파일에서 사용자 데이터를 다시 읽어옵니다.")
-                // 리스트 갱신 트리거
-                reloadTrigger++
-                println("[SUCCESS] 사용자 데이터가 다시 로드되었습니다.")
-            },
-            onDismiss = {
-                showReloadConfirmDialog = false
-            }
-        )
-    }
-    
-    // 설정 다이얼로그
-    if (showSettingsDialog) {
-        SettingsDialog(
-            onDismiss = {
-                showSettingsDialog = false
-                println("[INFO] 설정 다이얼로그가 닫혔습니다.")
-            }
-        )
-    }
-}
-
-@Composable
-fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0) {
-    val listState = rememberLazyListState() // LazyListState를 사용하여 스크롤 상태를 기억합니다.
-    var selectedUser by remember { mutableStateOf<UserInfo?>(null) }
-
-    // 실제 사용자 데이터를 LocalFileManager에서 로드
-    var users by remember { mutableStateOf(loadUsersFromFile()) }
-
-    // 새로고침 함수
-    fun refreshUserList() {
-        users = loadUsersFromFile()
-        println("[DEBUG] 사용자 리스트 새로고침 완료: ${users.size}개 항목")
-    }
-
-    // 컴포넌트가 처음 로드될 때와 buttonState가 변경될 때마다 자동 새로고침
-    // UserAdd 창이 닫힐 때(VIEW_USER_ADD -> NONE) 리스트 업데이트
-    // "다시 읽기" 버튼 클릭 시(reloadTrigger 변경) 리스트 업데이트
-    LaunchedEffect(buttonState, reloadTrigger) {
-        refreshUserList()
-    }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            state = listState, // 스크롤 상태를 적용합니다.
-            modifier = Modifier.fillMaxSize().padding(end = 12.dp) // 스크롤바와 겹치지 않도록 패딩을 추가합니다.
-        ) {
-            // 실제 사용자 정보를 항목으로 표시합니다.
-            items(users) { userInfo ->
-                UserInfoItem(userInfo = userInfo, onClick = {
-                    println("[DEBUG] 사용자 클릭: $it")
-                    selectedUser = it
-                })
-            }
-
-            // 사용자가 없을 때 안내 메시지 표시
-            if (users.isEmpty()) {
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "등록된 사용자가 없습니다.",
-                            fontSize = 18.sp,
-                            color = Color.Gray
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "고객 추가 버튼을 클릭하여 새 사용자를 등록하세요.",
-                            fontSize = 14.sp,
-                            color = Color.Gray
-                        )
-                    }
-                }
-            }
-        }
-
-        // 항상 표시되는 스크롤바를 추가합니다.
-        VerticalScrollbar(
-            adapter = rememberScrollbarAdapter(listState),
-            modifier = Modifier
-                .align(Alignment.CenterEnd) // 스크롤바를 오른쪽 끝에 배치합니다.
-                .fillMaxHeight(),
-            style = ScrollbarStyle(
-                minimalHeight = calculateScrollbarHeight(listState).dp, // 스크롤바 최소 높이
-                thickness = 10.dp, // 스크롤바 두께
-                shape = MaterialTheme.shapes.medium, // 스크롤바 모양
-                hoverDurationMillis = 300, // 호버 지속 시간
-                unhoverColor = Color.Red.copy(alpha = 0.5f), // 호버되지 않은 상태의 색상
-                hoverColor = Color.Red // 호버된 상태의 색상
-            )
-        )
-    }
-
-    selectedUser?.let {
-        UserRecordWindow(userInfo = it, onClose = { selectedUser = null })
-    }
-}
-
-// 스크롤바 높이를 계산하는 함수
-@Composable
-fun calculateScrollbarHeight(listState: LazyListState): Float {
-    val layoutInfo = listState.layoutInfo
-    val visibleItemsHeight = layoutInfo.visibleItemsInfo.sumOf { it.size } // 화면에 보이는 항목의 총 높이
-    val totalItemsHeight = layoutInfo.totalItemsCount * (layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 1) // 총 항목의 높이 추정
-
-    val viewportHeightRatio = if (totalItemsHeight > 0) {
-        visibleItemsHeight.toFloat() / totalItemsHeight
-    } else {
-        50f
-    }
-    return (viewportHeightRatio * 100.dp.value).coerceAtLeast(16.dp.value) // 최소 높이를 보장
-}
 
 
 data class UserInfo(
@@ -363,8 +53,14 @@ data class UserInfo(
     val phoneNumber: String,
     val carNumber: String,
     val registrationDate: String = "", // 등록일자 추가
-    val dbFileName: String = "" // user_%s.db 파일명 추가
+    val dbFileName: String = "", // user_%s.db 파일명 추가
+    // 추가 항목: 모델/국가형식/엔진/연식(년도)
+    val model: String = "",
+    val vehicleFormat: String = "",
+    val engine: String = "",
+    val manufactureYear: String = ""
 )
+
 
 /**
  * LocalFileManager에서 사용자 데이터를 로드하여 UserInfo 객체 리스트로 변환
@@ -391,12 +87,32 @@ fun loadUsersFromFile(): List<UserInfo> {
                 
                 if (dbFileExists) {
                     // DB 파일이 존재하는 경우만 리스트에 추가
+                    // per-user JSON에서 추가 필드 읽기 (없으면 빈 문자열)
+                    var model = ""
+                    var vehicleFormat = ""
+                    var engine = ""
+                    var manufactureYear = ""
+                    try {
+                        val jsonText = dbFile?.readText()?.trim().orEmpty()
+                        if (jsonText.isNotBlank() && jsonText.startsWith("{")) {
+                            val obj = Json.parseToJsonElement(jsonText).jsonObject
+                            model = obj["model"]?.jsonPrimitive?.contentOrNull ?: ""
+                            vehicleFormat = obj["vehicleFormat"]?.jsonPrimitive?.contentOrNull ?: ""
+                            engine = obj["engine"]?.jsonPrimitive?.contentOrNull ?: ""
+                            manufactureYear = obj["manufactureYear"]?.jsonPrimitive?.contentOrNull ?: ""
+                        }
+                    } catch (_: Exception) { }
+
                     val userInfo = UserInfo(
                         name = parts[4].trim(),           // 이름
                         phoneNumber = parts[3].trim(),    // 연락처
                         carNumber = carNumber,            // 차량번호
                         registrationDate = parts[2].trim(), // 등록일자
-                        dbFileName = dbFileName           // DB파일명 (user_%s.db)
+                        dbFileName = dbFileName,          // DB파일명 (user_%s.db)
+                        model = model,                    // 모델
+                        vehicleFormat = vehicleFormat,    // 국가형식
+                        engine = engine,                  // 엔진
+                        manufactureYear = manufactureYear // 연식
                     )
                     validUsers.add(userInfo)
                     validUserLines.add(userLine)
@@ -439,69 +155,55 @@ fun updateUserListFile(validUserLines: List<String>) {
     try {
         val userListFile = LocalFileManager.openFile(LocalFileManager.FileType.USER_LIST)
         if (userListFile != null) {
-            // 기존 파일 내용을 유효한 항목들로 덮어쓰기
-            val content = validUserLines.joinToString("\n")
-            if (content.isNotEmpty()) {
-                userListFile.writeText("$content\n")
-            } else {
-                userListFile.writeText("")
+            // CSV 라인 리스트를 JSON 배열로 변환하여 저장
+            val jsonArray = buildJsonArray {
+                validUserLines.forEach { line ->
+                    val parts = line.split(",")
+                    if (parts.size >= 7) {
+                        add(
+                            buildJsonObject {
+                                put("index", parts[0].trim().toIntOrNull() ?: 0)
+                                put("vehicleNumber", parts[1].trim())
+                                put("registrationDate", parts[2].trim())
+                                put("contact", parts[3].trim())
+                                put("name", parts[4].trim())
+                                put("remarks", parts[5].trim())
+                                put("dbName", parts[6].trim())
+                            }
+                        )
+                    }
+                }
+            }
+
+            // 원자적 쓰기: 임시 파일에 기록 후 교체
+            val path = userListFile.toPath()
+            val dir = path.parent
+            if (dir != null) Files.createDirectories(dir)
+            val tmp = Files.createTempFile(dir, userListFile.name, ".tmp")
+            Files.writeString(tmp, Json.encodeToString(JsonElement.serializer(), jsonArray))
+            try {
+                Files.move(tmp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            } catch (e: java.nio.file.AtomicMoveNotSupportedException) {
+                Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING)
             }
             
             LocalFileManager.closeFile(userListFile)
-            println("[DEBUG] 사용자 리스트 파일 업데이트 성공: ${validUserLines.size}개 항목")
+            println("[DEBUG] 사용자 리스트 파일(JSON) 업데이트 성공: ${validUserLines.size}개 항목")
         } else {
             println("[ERROR] 사용자 리스트 파일 연결 실패")
         }
     } catch (e: Exception) {
-        println("[ERROR] 사용자 리스트 파일 업데이트 중 오류: ${e.message}")
+        println("[ERROR] 사용자 리스트 파일(JSON) 업데이트 중 오류: ${e.message}")
         e.printStackTrace()
     }
 }
 
-@Composable
-fun UserInfoItem(userInfo: UserInfo, onClick: (UserInfo) -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(4.dp)
-            .background(Color.LightGray).alpha(0.9f)
-            .clickable { onClick(userInfo) }
-            .padding(8.dp)
-    ) {
-        // 첫 번째 줄: 이름과 등록일자
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(text = "이름: ${userInfo.name}", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            if (userInfo.registrationDate.isNotEmpty()) {
-                Text(text = "등록일자: ${userInfo.registrationDate}", fontSize = 14.sp, color = Color.DarkGray)
-            }
-        }
+/**
+ * 검색 유틸: 기존 테스트 호환을 위해 위임 함수 유지
+ */
+fun filterUsers(users: List<UserInfo>, query: String): List<UserInfo> =
+    com.zime.garage.ui.home.filterUsers(users, query)
 
-        // 두 번째 줄: 차량번호
-        Text(text = "차량번호: ${userInfo.carNumber}", fontSize = 16.sp, color = Color.DarkGray)
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // 세 번째 줄: 연락처, DB 파일명
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(text = "연락처: ${userInfo.phoneNumber}", fontSize = 14.sp, color = Color.DarkGray)
-            if (userInfo.dbFileName.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "DB 파일: ${userInfo.dbFileName}",
-                    fontSize = 12.sp,
-                    color = Color.Blue,
-                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
-                )
-            }
-        }
-    }
-}
 @Composable
 fun UserDialog(userInfo: UserInfo, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
@@ -522,70 +224,6 @@ fun UserDialog(userInfo: UserInfo, onDismiss: () -> Unit) {
     }
 }
 
-/**
- * 파일 다시 읽기 확인 다이얼로그
- * 
- * 파일에서 사용자 데이터를 다시 읽어오기 전에 사용자에게 확인을 요청하는 다이얼로그입니다.
- */
-@Composable
-fun ReloadConfirmDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            elevation = 8.dp,
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp)
-            ) {
-                // 제목
-                Text(
-                    text = "파일 다시 읽기",
-                    style = MaterialTheme.typography.h6,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                
-                // 안내 메시지
-                Text(
-                    text = "파일에서 사용자 데이터를 다시 읽어옵니다.\n최신 파일 내용으로 목록이 업데이트됩니다.\n\n계속하시겠습니까?",
-                    style = MaterialTheme.typography.body1,
-                    color = Color.DarkGray,
-                    modifier = Modifier.padding(bottom = 24.dp)
-                )
-                
-                // 버튼들
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Button(
-                        onClick = onDismiss,
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray),
-                        modifier = Modifier.padding(end = 8.dp)
-                    ) {
-                        Text("취소", color = Color.White)
-                    }
-                    
-                    Button(
-                        onClick = onConfirm,
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Color.Blue)
-                    ) {
-                        Text("새로고침", color = Color.White)
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-
-
-
 
 fun main() = application {
     //초기화
@@ -594,6 +232,8 @@ fun main() = application {
 //    var action by remember { mutableStateOf("Last action: None") }
     var isOpen by remember { mutableStateOf(true) }
     var showDataManagement by remember { mutableStateOf(false) }
+    var showVerDialog by remember { mutableStateOf(false) } // 설정 다이얼로그 표시 상태
+    var showManual by remember { mutableStateOf(false) } // 사용설명서 창 표시 상태
 
     if (isOpen) {
 
@@ -613,18 +253,195 @@ fun main() = application {
 
             ) {
 
+            // 외부 갱신 트리거 상태
+            var externalReloadTrigger by remember { mutableStateOf(0) }
+
             // 메인 그리기
-            HomeView(
-                onDataManagementClick = { showDataManagement = true }
+            com.zime.garage.ui.home.HomeView(
+                onDataManagementClick = { showDataManagement = true },
+                externalReloadTrigger = externalReloadTrigger
             )
+
+            // 엑셀 가져오기 결과 상태 및 로딩 상태
+            val scope = rememberCoroutineScope()
+            var showImportResult by remember { mutableStateOf(false) }
+            var importResultText by remember { mutableStateOf("") }
+            var importResultTitle by remember { mutableStateOf("엑셀 -> 고객 추가") }
+            var isLoading by remember { mutableStateOf(false) }
+            var loadingMessage by remember { mutableStateOf("가져오는 중입니다... 잠시만 기다려주세요.") }
+
+            // 백업 결과 다이얼로그 상태
+            var showBackupResult by remember { mutableStateOf(false) }
+            var backupResultText by remember { mutableStateOf("") }
+
+            // 복원 관련 상태
+            var showRestoreDialog by remember { mutableStateOf(false) }
+            var selectedBackupFile by remember { mutableStateOf<File?>(null) }
+            var showRestoreConfirm by remember { mutableStateOf(false) }
+            var showRestoreResult by remember { mutableStateOf(false) }
+            var restoreResultText by remember { mutableStateOf("") }
+
+
+            // 로딩 화면 (배경 클릭/스크롤 차단)
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        // 커스텀 색상 반투명
+                        .background(Color(0xFF000000).copy(alpha = 0.6f))
+                        // 최상단 배치 보장
+                        .zIndex(999f)
+                        // 클릭 차단 (시각 효과 제거)
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { /* consume click */ }
+                        // 기타 포인터 이벤트(스크롤/드래그 등) 차단
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    event.changes.forEach { it.consume() }
+                                }
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Surface(elevation = 8.dp, modifier = Modifier.padding(20.dp)) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            CircularProgressIndicator()
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(loadingMessage)
+                        }
+                    }
+                }
+            }
 
             // 메뉴바
             MenuBar {
                 Menu("파일", mnemonic = 'F') {
-                    Item("파일 보내기",
-                        onClick = {  },
+                    Item("엑셀 파일 보내기",
+                        onClick = {
+                            try {
+                                val chooser = JFileChooser().apply {
+                                    dialogTitle = "엑셀로 내보내기(.xlsx)"
+                                    isMultiSelectionEnabled = false
+                                    fileFilter = FileNameExtensionFilter("Excel 파일 (*.xlsx)", "xlsx")
+                                    selectedFile = File(ExcelExporter.defaultFileName("data"))
+                                }
+                                val resultCode = chooser.showSaveDialog(null)
+                                importResultTitle = "엑셀로 내보내기"
+                                if (resultCode == JFileChooser.APPROVE_OPTION) {
+                                    var file = chooser.selectedFile
+                                    if (!file.name.lowercase().endsWith(".xlsx")) {
+                                        file = File(file.parentFile, file.name + ".xlsx")
+                                    }
+                                    val result = ExcelExporter.exportAllToExcel(file)
+                                    importResultText = result.toString()
+                                    showImportResult = true
+                                } else {
+                                    importResultText = "내보내기가 취소되었습니다."
+                                    showImportResult = true
+                                }
+                            } catch (e: Exception) {
+                                importResultTitle = "엑셀로 내보내기"
+                                importResultText = "내보내기 중 오류: ${e.message}"
+                                showImportResult = true
+                            }
+                        },
                         shortcut = KeyShortcut(Key.C, ctrl = true)
                     )
+                    Item("엑셀에서 고객+작업기록 추가",
+                        onClick = {
+                            try {
+                                val chooser = JFileChooser().apply {
+                                    dialogTitle = "엑셀 파일 선택(.xlsx)"
+                                    isMultiSelectionEnabled = false
+                                    fileFilter = FileNameExtensionFilter("Excel 파일 (*.xlsx)", "xlsx")
+                                }
+                                val resultCode = chooser.showOpenDialog(null)
+                                if (resultCode == JFileChooser.APPROVE_OPTION) {
+                                    val file = chooser.selectedFile
+                                    isLoading = true
+                                    loadingMessage = "엑셀에서 데이터를 가져오는 중입니다..."
+                                    scope.launch {
+                                        try {
+                                            withContext(Dispatchers.IO) {
+                                                // 백업 IO 스레드에서 실행
+                                                LocalFileManager.backupDatabase()
+                                            }
+
+                                            withContext(Dispatchers.IO) {
+                                                // 초기화는 IO 스레드에서 실행
+                                                LocalFileManager.initializeFiles()
+                                            }
+                                            val result = withContext(Dispatchers.IO) {
+                                                ExcelCombinedImporter.importUsersAndRecords(file)
+                                            }
+                                            // 파일에서 사용자 데이터를 다시 읽어 UI 반영 준비
+                                            withContext(Dispatchers.IO) {
+                                                loadUsersFromFile()
+                                            }
+                                            // 외부 트리거 증가로 리스트 갱신
+                                            externalReloadTrigger++
+                                            importResultTitle = "엑셀 -> 고객+작업기록 추가"
+                                            importResultText = "파일: ${file.name}\n\n${result}"
+                                            showImportResult = true
+                                        } catch (e: Exception) {
+                                            importResultTitle = "엑셀 -> 고객+작업기록 추가"
+                                            importResultText = "가져오기 중 오류: ${e.message}"
+                                            showImportResult = true
+                                        } finally {
+                                            isLoading = false
+                                        }
+                                    }
+                                } else {
+                                    importResultTitle = "엑셀 -> 고객+작업기록 추가"
+                                    importResultText = "가져오기가 취소되었습니다."
+                                    showImportResult = true
+                                }
+                            } catch (e: Exception) {
+                                importResultTitle = "엑셀 -> 고객+작업기록 추가"
+                                importResultText = "가져오기 중 오류: ${e.message}"
+                                showImportResult = true
+                                isLoading = false
+                            }
+                        },
+                        shortcut = KeyShortcut(Key.I, ctrl = true)
+                    )
+                    Separator()
+                    Item("DB 백업",
+                        onClick = {
+                            scope.launch {
+                                try {
+                                    val zipFile = withContext(Dispatchers.IO) {
+                                        LocalFileManager.backupDatabase()
+                                    }
+                                    backupResultText = if (zipFile != null) {
+                                        "백업이 완료되었습니다.\n" + zipFile.absolutePath
+                                    } else {
+                                        "백업 실패: 생성된 파일이 없습니다."
+                                    }
+                                } catch (e: Exception) {
+                                    backupResultText = "백업 중 오류: ${e.message}"
+                                } finally {
+                                    showBackupResult = true
+                                }
+                            }
+                        },
+                        shortcut = KeyShortcut(Key. B, ctrl = true)
+                    )
+                    Item("DB 백업 복원",
+                        onClick = {
+                            selectedBackupFile = null
+                            showRestoreDialog = true
+                        },
+                        shortcut = KeyShortcut(Key. R, ctrl = true)
+                    )
+
                     Separator()
                     Item("종료",
                         onClick = { isOpen = false },
@@ -640,34 +457,189 @@ fun main() = application {
                 }
 
                 Menu("도움말", mnemonic = 'A') {
-//                    CheckboxItem(
-//                        "Advanced settings",
-//                        checked = isSubmenuShowing,
-//                        onCheckedChange = {
-//                            isSubmenuShowing = !isSubmenuShowing
-//                        }
-//                    )
-//                    if (isSubmenuShowing) {
-//                        Menu("Settings") {
-//                            Item("Setting 1", onClick = {  })
-//                            Item("Setting 2", onClick = {  })
-//                        }
-//                    }
-//                    Separator()
+                    Item("사용설명서",
+                        icon = HelpfIcon,
+                        onClick = { showManual = true })
+                    Separator()
                     Item("정보",
                         icon = AboutIcon,
-                        onClick = { })
-
+                        onClick = {showVerDialog = true })
                 }
             }
 
+            // 백업 결과 다이얼로그
+            if (showBackupResult) {
+                AlertDialog(
+                    onDismissRequest = { showBackupResult = false },
+                    title = { Text("백업 결과") },
+                    text = { Text(backupResultText) },
+                    confirmButton = {
+                        Button(onClick = { showBackupResult = false }) {
+                            Text("확인")
+                        }
+                    }
+                )
+            }
 
-//            Box(
-//                modifier = Modifier.fillMaxSize(),
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Text(text = action)
-//            }
+            // DB 백업 복원: 파일 선택 다이얼로그
+            if (showRestoreDialog) {
+                val backupFiles = remember(showRestoreDialog) {
+                    val dir = File(Util.getDatabasePath("db/backup", true))
+                    dir.mkdirs()
+                    dir.listFiles { f -> f.isFile && f.name.lowercase().endsWith(".zip") }
+                        ?.sortedByDescending { it.name }
+                        ?: emptyList()
+                }
+                AlertDialog(
+                    onDismissRequest = { showRestoreDialog = false },
+                    title = { Text("DB 백업 복원") },
+                    text = {
+                        Column(modifier = Modifier.heightIn(min = 0.dp, max = 400.dp).fillMaxWidth()) {
+                            if (backupFiles.isEmpty()) {
+                                Text("백업 파일이 없습니다. 먼저 백업을 생성하세요.")
+                            } else {
+                                val listState = rememberLazyListState()
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    LazyColumn(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(end = 12.dp),
+                                        state = listState
+                                    ) {
+                                        items(backupFiles) { f ->
+                                            val isSelected = selectedBackupFile?.absolutePath == f.absolutePath
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .background(if (isSelected) Color(0xFFE3F2FD) else Color.Transparent)
+                                                    .clickable { selectedBackupFile = f }
+                                                    .padding(vertical = 6.dp, horizontal = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(f.name)
+                                            }
+                                        }
+                                    }
+                                    VerticalScrollbar(
+                                        modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                                        adapter = rememberScrollbarAdapter(listState)
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                if (selectedBackupFile != null) {
+                                    showRestoreDialog = false
+                                    showRestoreConfirm = true
+                                }
+                            },
+                            enabled = selectedBackupFile != null
+                        ) { Text("선택") }
+                    },
+                    dismissButton = {
+                        Button(onClick = { showRestoreDialog = false }) { Text("취소") }
+                    }
+                )
+            }
+
+            // 복원 경고 팝업
+            if (showRestoreConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showRestoreConfirm = false },
+                    title = { Text("경고") },
+                    text = { Text("선택한 백업으로 현재 DB를 덮어씁니다. 계속하시겠습니까?") },
+                    confirmButton = {
+                        Button(onClick = {
+                            val target = selectedBackupFile
+                            showRestoreConfirm = false
+                            if (target != null) {
+                                isLoading = true
+                                loadingMessage = "백업에서 복원 중입니다..."
+                                scope.launch {
+                                    val ok = withContext(Dispatchers.IO) {
+                                        LocalFileManager.restoreDatabaseFromZip(target)
+                                    }
+                                    isLoading = false
+                                    restoreResultText = if (ok) {
+                                        "복원이 완료되었습니다.\n" + target.absolutePath
+                                    } else {
+                                        "복원 실패: 오류가 발생했습니다."
+                                    }
+                                    showRestoreResult = true
+                                    if (ok) {
+                                        // 복원 성공 시, 파일 기반 모델을 다시 초기화하여 최신 상태를 반영
+                                        withContext(Dispatchers.IO) {
+                                            LocalFileManager.load()
+                                        }
+                                        // UI 갱신 트리거 증가 (사용자 목록 등 다시 읽기)
+                                        externalReloadTrigger++
+                                    }
+                                }
+                            }
+                        }) { Text("복원") }
+                    },
+                    dismissButton = {
+                        Button(onClick = { showRestoreConfirm = false }) { Text("취소") }
+                    }
+                )
+            }
+
+            // 복원 결과 다이얼로그
+            if (showRestoreResult) {
+                AlertDialog(
+                    onDismissRequest = { showRestoreResult = false },
+                    title = { Text("복원 결과") },
+                    text = { Text(restoreResultText) },
+                    confirmButton = {
+                        Button(onClick = { showRestoreResult = false }) { Text("확인") }
+                    }
+                )
+            }
+
+            // 엑셀 가져오기 결과 다이얼로그
+            if (showImportResult) {
+                AlertDialog(
+                    onDismissRequest = { showImportResult = false },
+                    title = { Text(importResultTitle) },
+                    text = {
+                        Box(modifier = Modifier.heightIn(min = 0.dp, max = 400.dp).fillMaxWidth()) {
+                            val listState = rememberLazyListState()
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(end = 12.dp),
+                                state = listState
+                            ) {
+                                items(importResultText.split("\n")) { line ->
+                                    Text(line)
+                                }
+                            }
+                            VerticalScrollbar(
+                                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                                adapter = rememberScrollbarAdapter(listState)
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(onClick = { showImportResult = false }) {
+                            Text("확인")
+                        }
+                    }
+                )
+            }
+
+            // 설정 다이얼로그 (Window 내부 구성으로 이동)
+            if (showVerDialog) {
+                VersionDialog(
+                    onDismiss = {
+                        showVerDialog = false
+                        println("[INFO] 버전정보 다이얼로그가 닫혔습니다.")
+                    }
+                )
+            }
         }
 
         // 데이터 관리 윈도우
@@ -690,6 +662,27 @@ fun main() = application {
                 )
             }
         }
+
+        // 사용설명서 윈도우
+        if (showManual) {
+            val manualWidth = (screenSize.width * 0.6).toInt()
+            val manualHeight = (screenSize.height * 0.7).toInt()
+            Window(
+                title = "사용설명서",
+                onCloseRequest = { showManual = false },
+                alwaysOnTop = true,
+                state = WindowState(
+                    width = manualWidth.dp,
+                    height = manualHeight.dp,
+                    position = WindowPosition(Alignment.Center)
+                )
+            ) {
+                ManualWindow(
+                    onCloseRequest = { showManual = false }
+                )
+            }
+        }
+
     }
 }
 
