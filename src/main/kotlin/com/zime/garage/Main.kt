@@ -58,7 +58,8 @@ data class UserInfo(
     val model: String = "",
     val vehicleFormat: String = "",
     val engine: String = "",
-    val manufactureYear: String = ""
+    val manufactureYear: String = "",
+    val allRemarks: String = "" // 작업 기록의 모든 비고를 합친 문자열 (검색용)
 )
 
 
@@ -103,6 +104,17 @@ fun loadUsersFromFile(): List<UserInfo> {
                         }
                     } catch (_: Exception) { }
 
+                    // 작업 기록에서 모든 비고를 수집
+                    var allRemarks = ""
+                    try {
+                        val records = LocalFileManager.loadUserRecordLines(carNumber)
+                        // 각 작업 기록의 비고(인덱스 17)를 수집하여 공백으로 구분된 문자열로 합침
+                        allRemarks = records
+                            .mapNotNull { row -> row.getOrNull(17)?.trim() }
+                            .filter { it.isNotBlank() }
+                            .joinToString(" ")
+                    } catch (_: Exception) { }
+
                     val userInfo = UserInfo(
                         name = parts[4].trim(),           // 이름
                         phoneNumber = parts[3].trim(),    // 연락처
@@ -112,7 +124,8 @@ fun loadUsersFromFile(): List<UserInfo> {
                         model = model,                    // 모델
                         vehicleFormat = vehicleFormat,    // 국가형식
                         engine = engine,                  // 엔진
-                        manufactureYear = manufactureYear // 연식
+                        manufactureYear = manufactureYear, // 연식
+                        allRemarks = allRemarks           // 작업 기록의 모든 비고
                     )
                     validUsers.add(userInfo)
                     validUserLines.add(userLine)

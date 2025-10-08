@@ -38,5 +38,6 @@ data class UserInfo(
     val model: String = "",
     val vehicleFormat: String = "",
     val engine: String = "",
-    val manufactureYear: String = ""
+    val manufactureYear: String = "",
+    val allRemarks: String = "" // 작업 기록의 모든 비고를 합친 문자열 (검색용)
 )

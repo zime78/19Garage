@@ -350,7 +350,7 @@ fun UserList(buttonState: ButtonState = ButtonState.NONE, reloadTrigger: Int = 0
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 label = { Text("검색") },
-                placeholder = { Text("이름/차량번호/전화번호") }
+                placeholder = { Text("이름/차량번호/전화번호/비고") }
             )
         }
         // 정렬 컨트롤 영역
@@ -593,7 +593,7 @@ private fun parseDateMillis(dateStr: String): Long {
 /**
  * 사용자 리스트 검색 필터 함수
  * - 검색어가 비어있으면 원본 리스트 반환
- * - 이름/차량번호/전화번호에 대해 대소문자 무시 부분 일치(OR)로 필터링
+ * - 이름/차량번호/전화번호/작업 기록 비고에 대해 대소문자 무시 부분 일치(OR)로 필터링
  */
 fun filterUsers(users: List<UserInfo>, query: String): List<UserInfo> {
     val q = query.trim()
@@ -602,6 +602,7 @@ fun filterUsers(users: List<UserInfo>, query: String): List<UserInfo> {
     return users.filter { u ->
         (u.name.takeIf { it.isNotBlank() }?.lowercase()?.contains(lower) == true) ||
                 (u.carNumber.takeIf { it.isNotBlank() }?.lowercase()?.contains(lower) == true) ||
-                (u.phoneNumber.takeIf { it.isNotBlank() }?.lowercase()?.contains(lower) == true)
+                (u.phoneNumber.takeIf { it.isNotBlank() }?.lowercase()?.contains(lower) == true) ||
+                (u.allRemarks.takeIf { it.isNotBlank() }?.lowercase()?.contains(lower) == true)
     }
 }
